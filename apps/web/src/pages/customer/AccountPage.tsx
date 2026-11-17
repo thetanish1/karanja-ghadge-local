@@ -1,166 +1,198 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext.js';
-import { User, Store, Shield, Phone, FileText, ExternalLink, LogOut, CheckCircle } from 'lucide-react';
+import { Edit2, ChevronRight, MapPin, CreditCard, Bell, Store, ArrowRight, LogOut } from 'lucide-react';
 
 interface AccountPageProps {
   onOpenLegal: (page: string) => void;
   onApplyShop: () => void;
   onOpenAuth: () => void;
+  onOpenOrder: (orderId: string) => void;
+  onOpenShopkeeper: () => void;
 }
 
-export const AccountPage: React.FC<AccountPageProps> = ({ onOpenLegal, onApplyShop, onOpenAuth }) => {
-  const { user, isAuthenticated, logout, quickLoginAs, activeRole } = useAuth();
+export const AccountPage: React.FC<AccountPageProps> = ({
+  onOpenLegal,
+  onApplyShop,
+  onOpenAuth,
+  onOpenOrder,
+  onOpenShopkeeper,
+}) => {
+  const { user, logout } = useAuth();
+  const userName = user?.name || 'Akash Kumar';
+  const userPhone = user?.phone ? `+91 ${user.phone}` : '+91 98765 43210';
+  const initials = userName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AK';
+
+  const orders = [
+    {
+      id: 'AC2409',
+      shop: 'Gupta Fresh Mart',
+      status: 'DELIVERING',
+      statusColor: 'text-[#ea580c]',
+      details: 'Today • 4 items • ₹291',
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'AC2321',
+      shop: 'The Bread House',
+      status: 'DELIVERED',
+      statusColor: 'text-[#1b5e39]',
+      details: '12 Aug • 3 items • ₹384',
+      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&auto=format&fit=crop&q=80',
+    },
+  ];
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto pb-24">
-      {/* Profile Card */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
-        {isAuthenticated && user ? (
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-lg">
-              {user.name ? user.name[0].toUpperCase() : 'U'}
+    <div className="font-sans select-none pb-28">
+      
+      {/* 1. Top Green Profile Header */}
+      <div className="bg-[#155a34] px-5 pt-7 pb-10 text-white relative">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-14 h-14 rounded-full bg-[#fed7aa] text-[#c2410c] text-lg font-extrabold flex items-center justify-center shadow-md">
+              {initials}
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold text-slate-900 truncate">{user.name || 'Resident Customer'}</h2>
-              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                <Phone className="w-3 h-3 text-slate-400" />
-                <span>+91 {user.phone}</span>
-              </p>
-              <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                {user.roles.map((r: string) => (
-                  <span key={r} className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium capitalize">
-                    {r.replace('_', ' ')}
-                  </span>
-                ))}
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">{userName}</h1>
+              <p className="text-xs text-white/80 mt-0.5">{userPhone}</p>
+            </div>
+          </div>
+
+          <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-white hover:bg-white/20 transition cursor-pointer">
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 space-y-4 -mt-5 relative z-10">
+        
+        {/* 2. Floating Stats Card */}
+        <div className="bg-white rounded-[22px] p-4 border border-slate-200/80 shadow-sm grid grid-cols-3 text-center divide-x divide-slate-100">
+          <div>
+            <div className="text-base font-extrabold text-[#111827]">12</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">Orders</div>
+          </div>
+          <div>
+            <div className="text-base font-extrabold text-[#111827]">₹1,240</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">Saved</div>
+          </div>
+          <div>
+            <div className="text-base font-extrabold text-[#111827]">4.8</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">Avg. rating</div>
+          </div>
+        </div>
+
+        {/* 3. Your Orders Section */}
+        <div>
+          <h2 className="text-sm font-bold text-[#111827] mb-2.5">Your orders</h2>
+          <div className="space-y-2.5">
+            {orders.map((ord) => (
+              <div
+                key={ord.id}
+                onClick={() => onOpenOrder(ord.id)}
+                className="bg-white rounded-[20px] p-3.5 border border-slate-200/80 shadow-xs hover:border-[#1b5e39] transition cursor-pointer flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-50 flex-shrink-0">
+                    <img
+                      src={ord.image}
+                      alt={ord.shop}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className={`text-[10px] font-bold ${ord.statusColor}`}>
+                      {ord.status} • #{ord.id}
+                    </div>
+                    <div className="text-xs font-bold text-[#111827] mt-0.5">{ord.shop}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{ord.details}</div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
               </div>
-            </div>
+            ))}
           </div>
-        ) : (
-          <div className="text-center py-2">
-            <h2 className="text-sm font-bold text-slate-900 mb-1">Welcome to Karanjaghadge Local</h2>
-            <p className="text-xs text-slate-500 mb-3">Sign in with phone number for orders & account</p>
-            <button
-              onClick={onOpenAuth}
-              className="py-2.5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-            >
-              Sign In with OTP
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Shopkeeper Onboarding Action */}
-      <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-3xl p-5 text-white shadow-md">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 pr-3">
-            <div className="inline-block bg-blue-500/30 text-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full mb-1.5 uppercase">
-              Free Pilot Partner
-            </div>
-            <h3 className="text-sm font-bold leading-tight">Do you own a shop in Karanjaghadge?</h3>
-            <p className="text-xs text-blue-100 mt-1">
-              List your shop and products for ₹0. Zero commission on pilot orders.
-            </p>
-          </div>
-          <Store className="w-10 h-10 text-blue-300 flex-shrink-0" />
         </div>
 
-        <button
-          onClick={onApplyShop}
-          className="mt-3.5 w-full py-2.5 bg-white text-blue-900 font-bold text-xs rounded-xl hover:bg-blue-50 transition shadow-sm"
-        >
-          Register My Shop for Free Pilot
-        </button>
-      </div>
+        {/* 4. Account Menu Items */}
+        <div>
+          <h2 className="text-sm font-bold text-[#111827] mb-2.5">Account</h2>
+          <div className="bg-white rounded-[22px] border border-slate-200/80 shadow-xs divide-y divide-slate-100 overflow-hidden">
+            
+            {/* Saved Addresses */}
+            <div className="p-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#e8f3ea] flex items-center justify-center text-[#1b5e39]">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#111827]">Saved addresses</div>
+                  <div className="text-[10px] text-slate-400">Home, Work</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
 
-      {/* Role Testing Shortcuts */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
-          Switch Perspective (Pilot Testing)
-        </h3>
-        <div className="grid grid-cols-2 gap-2 text-xs">
+            {/* Payments & Refunds */}
+            <div className="p-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#e8f3ea] flex items-center justify-center text-[#1b5e39]">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#111827]">Payments & refunds</div>
+                  <div className="text-[10px] text-slate-400">UPI and cash</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
+
+            {/* Notifications */}
+            <div className="p-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#e8f3ea] flex items-center justify-center text-[#1b5e39]">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#111827]">Notifications</div>
+                  <div className="text-[10px] text-slate-400">Offers and order updates</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </div>
+
+          </div>
+        </div>
+
+        {/* 5. Shopkeeper Portal Banner */}
+        <div
+          onClick={onOpenShopkeeper}
+          className="bg-[#155a34] rounded-[22px] p-4 text-white flex items-center justify-between shadow-xs hover:bg-[#124d2d] transition cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <Store className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white">Shopkeeper portal</div>
+              <div className="text-[11px] text-white/80">Manage your store on AapnaCart</div>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-white" />
+        </div>
+
+        {/* Sign Out Button */}
+        <div className="pt-2 text-center">
           <button
-            onClick={() => quickLoginAs('customer')}
-            className={`p-2.5 rounded-xl border text-left transition ${
-              activeRole === 'customer' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
+            onClick={logout}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 py-2 cursor-pointer"
           >
-            Priya (Customer)
-          </button>
-          <button
-            onClick={() => quickLoginAs('shopkeeper')}
-            className={`p-2.5 rounded-xl border text-left transition ${
-              activeRole === 'shopkeeper' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Ramesh (Shopkeeper)
-          </button>
-          <button
-            onClick={() => quickLoginAs('delivery_partner')}
-            className={`p-2.5 rounded-xl border text-left transition ${
-              activeRole === 'delivery_partner' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Sunil (Delivery Rider)
-          </button>
-          <button
-            onClick={() => quickLoginAs('admin')}
-            className={`p-2.5 rounded-xl border text-left transition ${
-              activeRole === 'admin' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Platform Admin
+            <LogOut className="w-4 h-4" />
+            <span>Sign out of AapnaCart</span>
           </button>
         </div>
+
       </div>
 
-      {/* Community & Legal Policies */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100 text-xs">
-        <button
-          onClick={() => onOpenLegal('terms')}
-          className="w-full p-3.5 text-left flex items-center justify-between text-slate-700 hover:bg-slate-50 font-medium"
-        >
-          <span>Terms of Service</span>
-          <FileText className="w-4 h-4 text-slate-400" />
-        </button>
-        <button
-          onClick={() => onOpenLegal('privacy')}
-          className="w-full p-3.5 text-left flex items-center justify-between text-slate-700 hover:bg-slate-50 font-medium"
-        >
-          <span>Privacy Policy</span>
-          <FileText className="w-4 h-4 text-slate-400" />
-        </button>
-        <button
-          onClick={() => onOpenLegal('cancellation')}
-          className="w-full p-3.5 text-left flex items-center justify-between text-slate-700 hover:bg-slate-50 font-medium"
-        >
-          <span>Cancellation & Refund Policy</span>
-          <FileText className="w-4 h-4 text-slate-400" />
-        </button>
-        <button
-          onClick={() => onOpenLegal('delivery')}
-          className="w-full p-3.5 text-left flex items-center justify-between text-slate-700 hover:bg-slate-50 font-medium"
-        >
-          <span>Delivery Terms & Pilot Coverage</span>
-          <FileText className="w-4 h-4 text-slate-400" />
-        </button>
-        <button
-          onClick={() => onOpenLegal('contact')}
-          className="w-full p-3.5 text-left flex items-center justify-between text-slate-700 hover:bg-slate-50 font-medium"
-        >
-          <span>Support & Karanja Community Contact</span>
-          <ExternalLink className="w-4 h-4 text-slate-400" />
-        </button>
-      </div>
-
-      {isAuthenticated && (
-        <button
-          onClick={logout}
-          className="w-full py-3 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-1.5"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Sign Out</span>
-        </button>
-      )}
     </div>
   );
 };

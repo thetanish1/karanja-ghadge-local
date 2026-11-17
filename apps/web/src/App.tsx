@@ -8,9 +8,12 @@ import { MultiShopModal } from './components/MultiShopModal.js';
 import { AapnaCartAuthModal } from './components/AapnaCartAuthModal.js';
 import { AapnaCartFigmaScreen } from './components/AapnaCartFigmaScreen.js';
 import { SplashScreen } from './components/SplashScreen.js';
+import { DeliveryLocationScreen } from './components/DeliveryLocationScreen.js';
+import { FloatingCartBar } from './components/FloatingCartBar.js';
 
 // Customer Pages
 import { HomePage } from './pages/customer/HomePage.js';
+import { ShopsPage } from './pages/customer/ShopsPage.js';
 import { ShopDetailPage } from './pages/customer/ShopDetailPage.js';
 import { SearchPage } from './pages/customer/SearchPage.js';
 import { CartPage } from './pages/customer/CartPage.js';
@@ -45,9 +48,11 @@ const MainApp: React.FC = () => {
 
   // Show the exact Figma design screen by default
   const [showFigmaLanding, setShowFigmaLanding] = useState<boolean>(true);
+  const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
+  const [selectedAddress, setSelectedAddress] = useState<string>('Home • Sector 14');
   const [currentTab, setCurrentTab] = useState<string>('home');
-  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
-  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [selectedShopId, setSelectedShopId] = useState<string | null>('shop-gupta');
+  const [activeOrderId, setActiveOrderId] = useState<string | null>('#AC2409');
   const [legalPage, setLegalPage] = useState<string>('terms');
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
@@ -84,7 +89,7 @@ const MainApp: React.FC = () => {
 
   const handleSelectOrder = (orderId: string) => {
     setActiveOrderId(orderId);
-    setCurrentTab('order-status');
+    setCurrentTab('orders');
   };
 
   const handleOpenLegal = (pageName: string) => {
@@ -94,7 +99,7 @@ const MainApp: React.FC = () => {
 
   // 1. FIGMA DESIGNED SPLASH SCREEN
   if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} durationMs={2400} />;
+    return <SplashScreen onFinish={() => setShowSplash(false)} durationMs={2200} />;
   }
 
   // 2. FIGMA DESIGNED WELCOME & ONBOARDING LANDING
@@ -114,6 +119,20 @@ const MainApp: React.FC = () => {
     );
   }
 
+  // 3. FIGMA DELIVERY LOCATION MODAL SCREEN
+  if (showLocationModal) {
+    return (
+      <DeliveryLocationScreen
+        onBack={() => setShowLocationModal(false)}
+        onConfirm={(loc) => {
+          setSelectedAddress(loc);
+          setShowLocationModal(false);
+        }}
+        currentAddress={selectedAddress}
+      />
+    );
+  }
+
   const renderContent = () => {
     switch (currentTab) {
       // Customer Views
@@ -121,13 +140,22 @@ const MainApp: React.FC = () => {
         return (
           <HomePage
             onSelectShop={handleSelectShop}
+            onNavigateShops={() => setCurrentTab('shops')}
             onNavigateSearch={() => setCurrentTab('search')}
+          />
+        );
+      case 'shops':
+        return (
+          <ShopsPage
+            onBack={() => setCurrentTab('home')}
+            onSelectShop={handleSelectShop}
+            onOpenSearch={() => setCurrentTab('search')}
           />
         );
       case 'shop-detail':
         return (
           <ShopDetailPage
-            shopId={selectedShopId || ''}
+            shopId={selectedShopId || 'shop-gupta'}
             onBack={() => setCurrentTab('home')}
             onNavigateCart={() => setCurrentTab('cart')}
           />
@@ -137,9 +165,9 @@ const MainApp: React.FC = () => {
       case 'cart':
         return (
           <CartPage
-            onProceedToCheckout={() => setCurrentTab('checkout')}
-            onBrowseShops={() => setCurrentTab('home')}
-            onOpenAuth={() => setAuthModalOpen(true)}
+            onBack={() => setCurrentTab('home')}
+            onProceedToCheckout={() => setCurrentTab('orders')}
+            onBrowseShops={() => setCurrentTab('shops')}
           />
         );
       case 'checkout':
@@ -148,19 +176,19 @@ const MainApp: React.FC = () => {
             onBack={() => setCurrentTab('cart')}
             onOrderSuccess={(orderId) => {
               setActiveOrderId(orderId);
-              setCurrentTab('order-status');
+              setCurrentTab('orders');
             }}
           />
         );
-      case 'order-status':
+      case 'orders':
         return (
           <OrderStatusPage
-            orderId={activeOrderId || ''}
-            onBack={() => setCurrentTab('orders')}
-            onBrowseShops={() => setCurrentTab('home')}
+            orderId={activeOrderId || '#AC2409'}
+            onBack={() => setCurrentTab('home')}
+            onBrowseShops={() => setCurrentTab('shops')}
           />
         );
-      case 'orders':
+      case 'order-history':
         return (
           <OrderHistoryPage
             onSelectOrder={handleSelectOrder}
@@ -174,6 +202,8 @@ const MainApp: React.FC = () => {
             onOpenLegal={handleOpenLegal}
             onApplyShop={() => setCurrentTab('shop-apply')}
             onOpenAuth={() => setAuthModalOpen(true)}
+            onOpenOrder={handleSelectOrder}
+            onOpenShopkeeper={() => setCurrentTab('shop-queue')}
           />
         );
 
@@ -216,26 +246,46 @@ const MainApp: React.FC = () => {
         );
 
       default:
-        return <HomePage onSelectShop={handleSelectShop} onNavigateSearch={() => setCurrentTab('search')} />;
+        return (
+          <HomePage
+            onSelectShop={handleSelectShop}
+            onNavigateShops={() => setCurrentTab('shops')}
+            onNavigateSearch={() => setCurrentTab('search')}
+          />
+        );
     }
   };
 
   return (
     <div className="min-h-screen bg-[#eaede9] flex justify-center antialiased font-sans">
-      <div className="w-full max-w-[430px] min-h-screen bg-white sm:my-4 sm:rounded-[36px] sm:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col justify-between border-0 sm:border border-slate-200/60 relative">
+      <div className="w-full max-w-[430px] min-h-screen bg-white sm:my-4 sm:rounded-[44px] sm:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col justify-between border-0 sm:border border-slate-200/60 relative">
+        
         {/* PWA Mobile Install Banner for Android & iOS */}
         <InstallPwaBanner />
 
-        {/* Top Mobile Navbar */}
-        <Navbar onOpenAuth={() => setAuthModalOpen(true)} />
+        {/* Top Mobile Navbar (Hidden on store detail, cart, and tracking to match Figma screens) */}
+        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && (
+          <Navbar
+            onOpenLocation={() => setShowLocationModal(true)}
+            onOpenAccount={() => setCurrentTab('account')}
+            selectedAddress={selectedAddress}
+          />
+        )}
 
         {/* Main View Area */}
         <main className="flex-1 w-full overflow-y-auto">
           {renderContent()}
         </main>
 
-        {/* Bottom Navigation */}
-        <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
+        {/* Floating Cart Bar (appears when items in cart, hidden on cart and tracking) */}
+        {currentTab !== 'cart' && currentTab !== 'orders' && (
+          <FloatingCartBar onOpenCart={() => setCurrentTab('cart')} />
+        )}
+
+        {/* Bottom Navigation (matching Figma 4 tabs) */}
+        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'shop-detail' && (
+          <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
+        )}
 
         {/* Multi-Shop Constraint Modal */}
         <MultiShopModal />

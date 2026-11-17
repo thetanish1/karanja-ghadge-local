@@ -1,288 +1,167 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../../services/api.js';
-import { formatPaiseToRupees } from '@karanjaghadge/shared';
-import { StatusBadge } from '../../components/StatusBadge.js';
-import {
-  ArrowLeft,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  XCircle,
-  Truck,
-  Store,
-  Phone,
-  KeyRound,
-  RefreshCw,
-} from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, MoreHorizontal, Check, ShoppingBag, Truck, Home, Phone, Star, Store } from 'lucide-react';
 
 interface OrderStatusPageProps {
-  orderId: string;
+  orderId?: string;
   onBack: () => void;
   onBrowseShops: () => void;
 }
 
-export const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ orderId, onBack, onBrowseShops }) => {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    loadOrder();
-    // Poll for status updates every 8 seconds
-    const interval = setInterval(loadOrder, 8000);
-    return () => clearInterval(interval);
-  }, [orderId]);
-
-  const loadOrder = async () => {
-    try {
-      const res = await api.getOrderById(orderId);
-      if (res.success) {
-        setData(res);
-      }
-    } catch (e: any) {
-      setError(e.message || 'Failed to load order status');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancelRequest = async () => {
-    try {
-      setCancelling(true);
-      const res = await api.cancelOrder(orderId, cancelReason);
-      if (res.success) {
-        setCancelModalOpen(false);
-        await loadOrder();
-      }
-    } catch (e: any) {
-      alert(e.message || 'Could not cancel order');
-    } finally {
-      setCancelling(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="p-4 space-y-4 max-w-md mx-auto animate-pulse">
-        <div className="h-6 w-24 bg-slate-200 rounded" />
-        <div className="h-44 bg-slate-200 rounded-3xl" />
-        <div className="h-32 bg-slate-200 rounded-2xl" />
-      </div>
-    );
-  }
-
-  if (!data || !data.order) {
-    return (
-      <div className="p-8 text-center max-w-sm mx-auto">
-        <AlertCircle className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-        <p className="text-sm font-semibold text-slate-700">Order not found.</p>
-        <button onClick={onBack} className="mt-3 text-xs text-emerald-600 font-bold underline">
-          Back
-        </button>
-      </div>
-    );
-  }
-
-  const { order, items, events } = data;
-
-  // Check if cancellation is permitted (only before preparing)
-  const canCancel = ['placed', 'shop_accepted'].includes(order.status);
-
-  // Status steps mapping
-  const steps =
-    order.fulfilmentType === 'pickup'
-      ? ['placed', 'shop_accepted', 'preparing', 'ready_for_pickup', 'completed']
-      : ['placed', 'shop_accepted', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'delivered'];
-
-  const currentStepIndex = steps.indexOf(order.status);
-
+export const OrderStatusPage: React.FC<OrderStatusPageProps> = ({
+  orderId = '#AC2409',
+  onBack,
+  onBrowseShops,
+}) => {
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto pb-28">
-      {/* Top Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-        <button onClick={onBack} className="p-1 -ml-1 text-slate-700 hover:text-slate-900 flex items-center gap-1 text-xs font-semibold">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Orders</span>
-        </button>
-        <div className="text-right">
-          <div className="text-xs font-extrabold text-slate-900">#{order.orderNumber}</div>
-          <div className="text-[10px] text-slate-400">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-        </div>
-      </div>
-
-      {/* Main Status Hero Card */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm text-center relative overflow-hidden">
-        <div className="inline-block mb-2">
-          <StatusBadge status={order.status} />
-        </div>
-
-        <h2 className="text-lg font-extrabold text-slate-900 capitalize">
-          {order.status.replace(/_/g, ' ')}
-        </h2>
-
-        <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-          {order.status === 'placed' && 'Sent to shopkeeper. Waiting for shop confirmation.'}
-          {order.status === 'shop_accepted' && 'Shopkeeper accepted! Packing items shortly.'}
-          {order.status === 'preparing' && 'Shop is preparing your order.'}
-          {order.status === 'ready_for_pickup' &&
-            (order.fulfilmentType === 'pickup'
-              ? 'Your order is ready at the shop counter for pickup!'
-              : 'Order packed! Waiting for delivery rider.')}
-          {order.status === 'out_for_delivery' && 'Delivery partner is on the way to your address!'}
-          {order.status === 'delivered' && 'Delivered successfully. Thank you for supporting local Karanja shops!'}
-          {order.status === 'completed' && 'Order completed.'}
-          {order.status === 'cancelled' && `Cancelled. Reason: ${order.cancellationReason || 'Cancelled by user/shop'}`}
-          {order.status === 'shop_rejected' && `Shop rejected order. Reason: ${order.rejectionReason || 'Item unavailable'}`}
-        </p>
-
-        {/* Delivery OTP Card (Only visible to customer when out for delivery or ready) */}
-        {order.deliveryOtp && !['delivered', 'completed', 'cancelled', 'shop_rejected'].includes(order.status) && (
-          <div className="mt-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 inline-flex flex-col items-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
-              <KeyRound className="w-3 h-3" /> Delivery Verification OTP
-            </span>
-            <span className="text-2xl font-mono font-black text-emerald-900 tracking-widest mt-1">
-              {order.deliveryOtp}
-            </span>
-            <span className="text-[10px] text-emerald-700 mt-0.5">Share with driver upon handover</span>
-          </div>
-        )}
-
-        {/* Honest Milestone Progress Line */}
-        {!['cancelled', 'shop_rejected'].includes(order.status) && (
-          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400">
-            {steps.map((s, idx) => {
-              const isPastOrCurrent = currentStepIndex >= idx;
-              return (
-                <div key={s} className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 text-[10px] transition ${
-                      isPastOrCurrent
-                        ? 'bg-emerald-600 text-white font-bold'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}
-                  >
-                    {isPastOrCurrent ? '✓' : idx + 1}
-                  </div>
-                  <span className={`capitalize text-center leading-tight ${isPastOrCurrent ? 'text-emerald-800 font-bold' : ''}`}>
-                    {s === 'shop_accepted' ? 'Accepted' : s === 'ready_for_pickup' ? 'Ready' : s === 'out_for_delivery' ? 'Out' : s}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Shop Information & Contact */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Shop Details</h3>
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-bold text-slate-900">{order.shopName}</h4>
-            <p className="text-xs text-slate-500">{order.shopAddress}</p>
-          </div>
-          {order.shopPhone && (
-            <a
-              href={`tel:${order.shopPhone}`}
-              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 text-xs font-semibold"
-            >
-              <Phone className="w-3.5 h-3.5" /> Call
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* Ordered Items Breakdown */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2.5">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Ordered Items</h3>
-        <div className="divide-y divide-slate-100">
-          {items.map((it: any) => (
-            <div key={it._id} className="py-2 flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-slate-900">{it.name}</span>
-                <span className="text-slate-500 ml-2">x {it.qty} {it.unit}</span>
-              </div>
-              <span className="font-bold text-slate-900">{formatPaiseToRupees(it.subtotalPaise)}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
-          <span className="font-bold text-slate-800">Total Paid ({order.paymentMethod.toUpperCase()})</span>
-          <span className="text-sm font-extrabold text-emerald-700">{formatPaiseToRupees(order.totalPaise)}</span>
-        </div>
-      </div>
-
-      {/* Activity Timeline (Append-Only OrderEvents) */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2.5">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Status Timeline</h3>
-        <div className="space-y-3">
-          {events.map((ev: any) => (
-            <div key={ev.id} className="flex items-start gap-2.5 text-xs">
-              <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0" />
-              <div>
-                <div className="font-bold text-slate-900 capitalize">
-                  {ev.to.replace(/_/g, ' ')}
-                  <span className="text-[10px] font-normal text-slate-400 ml-1.5">by {ev.actorRole}</span>
-                </div>
-                {ev.reason && <p className="text-[11px] text-slate-600 italic">"{ev.reason}"</p>}
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  {new Date(ev.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Customer Cancellation Request button (strictly permitted only before preparing) */}
-      {canCancel && (
+    <div className="min-h-screen bg-[#f8faf9] flex flex-col justify-between font-sans select-none pb-12">
+      
+      {/* 1. Top Header */}
+      <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-slate-100">
         <button
-          onClick={() => setCancelModalOpen(true)}
-          className="w-full py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+          onClick={onBack}
+          className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer"
         >
-          <XCircle className="w-4 h-4" />
-          <span>Request Order Cancellation</span>
+          <ArrowLeft className="w-4 h-4" />
         </button>
-      )}
+        <h1 className="text-base font-bold text-[#111827]">Track order</h1>
+        <button className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer">
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </div>
 
-      {/* Cancellation Modal */}
-      {cancelModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl animate-in fade-in">
-            <h3 className="text-sm font-bold text-slate-900 mb-1">Cancel Order?</h3>
-            <p className="text-xs text-slate-500 mb-3">
-              Cancellation is only allowed before the shopkeeper starts preparing your items.
-            </p>
-            <input
-              type="text"
-              placeholder="Reason for cancellation (optional)"
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setCancelModalOpen(false)}
-                className="py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold"
-              >
-                Keep Order
-              </button>
-              <button
-                onClick={handleCancelRequest}
-                disabled={cancelling}
-                className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition"
-              >
-                {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
-              </button>
-            </div>
+      <div className="space-y-4">
+        
+        {/* 2. Top Stylized Delivery Route Map */}
+        <div className="relative h-48 bg-[#e2eee4] overflow-hidden flex items-center justify-between px-8">
+          {/* Subtle vector map roads */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <path d="M-20,100 L420,100" stroke="#ffffff" strokeWidth="20" />
+            <path d="M100,-20 L280,220" stroke="#ffffff" strokeWidth="12" />
+          </svg>
+
+          {/* Dotted green delivery path */}
+          <div className="absolute left-16 right-16 top-1/2 -translate-y-1/2 h-0 border-b-2 border-dashed border-[#1b5e39] z-10" />
+
+          {/* Store Pin (Left) */}
+          <div className="relative z-20 w-12 h-12 rounded-2xl bg-[#1b5e39] text-white flex items-center justify-center shadow-md">
+            <Store className="w-6 h-6 text-white" />
+          </div>
+
+          {/* Delivery Vehicle Icon on Route (Middle) */}
+          <div className="relative z-20 w-11 h-11 rounded-full bg-[#f97316] text-white flex items-center justify-center shadow-lg border-2 border-white">
+            <Truck className="w-5 h-5 text-white" />
+          </div>
+
+          {/* Home Pin (Right) */}
+          <div className="relative z-20 w-12 h-12 rounded-2xl bg-white text-[#1b5e39] flex items-center justify-center shadow-md border border-slate-200">
+            <Home className="w-6 h-6 text-[#1b5e39]" />
           </div>
         </div>
-      )}
+
+        <div className="px-4 space-y-3.5">
+          
+          {/* 3. ETA Card */}
+          <div className="bg-white rounded-[22px] p-4 border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-slate-400 font-medium">Arriving by</div>
+              <div className="text-[28px] font-extrabold text-[#111827] tracking-tight leading-tight mt-0.5">
+                10:10 AM
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-[#1b5e39] bg-[#e8f3ea] px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-[#1b5e39] animate-pulse" />
+              <span>On time • 18–24 min</span>
+            </div>
+          </div>
+
+          {/* 4. Timeline Milestones */}
+          <div className="bg-white rounded-[22px] p-5 border border-slate-200/80 shadow-xs space-y-6">
+            
+            {/* Step 1: Order confirmed */}
+            <div className="flex items-start gap-3.5 relative">
+              <div className="w-8 h-8 rounded-full bg-[#e8f3ea] text-[#1b5e39] flex items-center justify-center flex-shrink-0 z-10 shadow-xs">
+                <Check className="w-4 h-4 stroke-[3]" />
+              </div>
+              <div className="flex-1 pt-0.5">
+                <h4 className="text-xs font-bold text-[#111827]">Order confirmed</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">9:42 AM</p>
+              </div>
+              {/* Connecting vertical line */}
+              <div className="absolute left-4 top-8 bottom-[-24px] w-0.5 bg-[#1b5e39]" />
+            </div>
+
+            {/* Step 2: Preparing your order (Active) */}
+            <div className="flex items-start gap-3.5 relative">
+              <div className="w-8 h-8 rounded-full bg-[#e8f3ea] text-[#1b5e39] flex items-center justify-center flex-shrink-0 z-10 shadow-xs ring-4 ring-[#e8f3ea]/50">
+                <ShoppingBag className="w-4 h-4 text-[#1b5e39]" />
+              </div>
+              <div className="flex-1 pt-0.5">
+                <h4 className="text-xs font-bold text-[#111827]">Preparing your order</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">The shop is packing your items</p>
+              </div>
+              {/* Connecting vertical line */}
+              <div className="absolute left-4 top-8 bottom-[-24px] w-0.5 bg-slate-200" />
+            </div>
+
+            {/* Step 3: Out for delivery */}
+            <div className="flex items-start gap-3.5 relative">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0 z-10">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div className="flex-1 pt-0.5">
+                <h4 className="text-xs font-bold text-slate-700">Out for delivery</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Next</p>
+              </div>
+              {/* Connecting vertical line */}
+              <div className="absolute left-4 top-8 bottom-[-24px] w-0.5 bg-slate-200" />
+            </div>
+
+            {/* Step 4: Delivered */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0 z-10">
+                <Home className="w-4 h-4" />
+              </div>
+              <div className="flex-1 pt-0.5">
+                <h4 className="text-xs font-bold text-slate-700">Delivered</h4>
+              </div>
+            </div>
+
+          </div>
+
+          {/* 5. Delivery Partner Card */}
+          <div className="bg-white rounded-[22px] p-4 border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-[#fed7aa] text-[#c2410c] font-bold text-sm flex items-center justify-center flex-shrink-0">
+                RS
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-400 font-medium">Your delivery partner</div>
+                <div className="text-xs font-bold text-[#111827] mt-0.5">Ravi Singh</div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  <span className="font-bold">4.9</span>
+                  <span>•</span>
+                  <span>520 deliveries</span>
+                </div>
+              </div>
+            </div>
+
+            <button className="w-10 h-10 rounded-full bg-[#e8f3ea] text-[#1b5e39] flex items-center justify-center hover:bg-[#d5edd9] transition shadow-xs cursor-pointer">
+              <Phone className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Support Link */}
+          <div className="text-center pt-2 text-xs text-slate-500">
+            Need help with your order?{' '}
+            <button className="font-bold text-[#1b5e39] hover:underline cursor-pointer">
+              Get support
+            </button>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
 };
