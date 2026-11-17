@@ -278,7 +278,10 @@ const MainApp: React.FC = () => {
 
         {/* Floating Cart Bar (appears when items in cart, hidden on cart, tracking, and shopkeeper) */}
         {currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && (
-          <FloatingCartBar onOpenCart={() => setCurrentTab('cart')} />
+          <FloatingCartBar
+            onOpenCart={() => setCurrentTab('cart')}
+            isShopDetail={currentTab === 'shop-detail'}
+          />
         )}
 
         {/* Bottom Navigation (matching Figma 4 tabs, hidden in shopkeeper) */}

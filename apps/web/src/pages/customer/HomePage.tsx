@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext.js';
 import { Search, ChevronRight, Clock, Star, Plus, Minus, ArrowRight, Check, SlidersHorizontal } from 'lucide-react';
-import { AddToCartModal, AddedProductItem } from '../../components/AddToCartModal.js';
 
 interface HomePageProps {
   onSelectShop: (shopId: string) => void;
@@ -18,8 +17,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { cart, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [addedModalProduct, setAddedModalProduct] = useState<AddedProductItem | null>(null);
-  const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
   // Initial mockup products matching Figma design
   const popularProducts = [
@@ -311,45 +308,48 @@ export const HomePage: React.FC<HomePageProps> = ({
                   {qty === 0 ? (
                     <button
                       onClick={() => {
-                        updateQuantity(p.id, 1);
-                        setAddedModalProduct({
-                          id: p.id,
+                        updateQuantity(p.id, 1, {
                           name: p.name,
                           unit: p.unit,
-                          price: p.price,
-                          mrp: p.mrp,
-                          image: p.image,
+                          pricePaise: p.price * 100,
+                          shopId: p.shopId,
                           shopName: shops.find((s) => s.id === p.shopId)?.name || 'Gupta Fresh Mart',
+                          image: p.image,
                         });
-                        setShowAddModal(true);
                       }}
                       className="px-3.5 py-1.5 rounded-xl border-2 border-[#1b5e39] text-[#1b5e39] hover:bg-[#1b5e39] hover:text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
                     >
-                      ADD +
+                      ADD
                     </button>
                   ) : (
                     <div className="flex items-center gap-2 bg-[#1b5e39] text-white rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-xs">
                       <button
-                        onClick={() => updateQuantity(p.id, qty - 1)}
+                        onClick={() =>
+                          updateQuantity(p.id, qty - 1, {
+                            name: p.name,
+                            unit: p.unit,
+                            pricePaise: p.price * 100,
+                            shopId: p.shopId,
+                            shopName: shops.find((s) => s.id === p.shopId)?.name || 'Gupta Fresh Mart',
+                            image: p.image,
+                          })
+                        }
                         className="hover:opacity-80 cursor-pointer"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
                       <span className="min-w-[14px] text-center font-bold">{qty}</span>
                       <button
-                        onClick={() => {
-                          updateQuantity(p.id, qty + 1);
-                          setAddedModalProduct({
-                            id: p.id,
+                        onClick={() =>
+                          updateQuantity(p.id, qty + 1, {
                             name: p.name,
                             unit: p.unit,
-                            price: p.price,
-                            mrp: p.mrp,
-                            image: p.image,
+                            pricePaise: p.price * 100,
+                            shopId: p.shopId,
                             shopName: shops.find((s) => s.id === p.shopId)?.name || 'Gupta Fresh Mart',
-                          });
-                          setShowAddModal(true);
-                        }}
+                            image: p.image,
+                          })
+                        }
                         className="hover:opacity-80 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -362,14 +362,6 @@ export const HomePage: React.FC<HomePageProps> = ({
           })}
         </div>
       </div>
-
-      {/* Interactive Add to Cart Popup Modal */}
-      <AddToCartModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        product={addedModalProduct}
-        onViewCart={onNavigateCart || onNavigateShops}
-      />
 
     </div>
   );

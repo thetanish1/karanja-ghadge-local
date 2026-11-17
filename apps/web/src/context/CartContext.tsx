@@ -9,6 +9,7 @@ export interface CartItem {
   pricePaise: number;
   qty: number;
   subtotalPaise: number;
+  image?: string;
 }
 
 export interface CartData {
@@ -22,10 +23,19 @@ export interface CartData {
   itemCount: number;
 }
 
+export interface ItemMetadata {
+  name?: string;
+  unit?: string;
+  pricePaise?: number;
+  shopId?: string;
+  shopName?: string;
+  image?: string;
+}
+
 interface CartContextType {
   cart: CartData | null;
   loading: boolean;
-  updateQuantity: (productId: string, qty: number) => Promise<void>;
+  updateQuantity: (productId: string, qty: number, meta?: ItemMetadata) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
   conflictModal: {
@@ -33,31 +43,60 @@ interface CartContextType {
     error: string;
     pendingProductId?: string;
     pendingQty?: number;
+    pendingMeta?: ItemMetadata;
   };
   resolveConflict: (clearAndAdd: boolean) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'aapnacart_local_cart';
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  const [cart, setCart] = useState<CartData | null>(null);
+  
+  // Initialize from localStorage if present
+  const [cart, setCart] = useState<CartData | null>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      // ignore JSON parse error
+    }
+    return null;
+  });
+
   const [loading, setLoading] = useState(false);
   const [conflictModal, setConflictModal] = useState<{
     isOpen: boolean;
     error: string;
     pendingProductId?: string;
     pendingQty?: number;
+    pendingMeta?: ItemMetadata;
   }>({
     isOpen: false,
     error: '',
   });
 
+  // Sync to localStorage whenever cart changes
+  useEffect(() => {
+    try {
+      if (cart && cart.itemCount > 0) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cart));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
+    } catch (e) {
+      // ignore storage error
+    }
+  }, [cart]);
+
+  // Sync with server if authenticated
   useEffect(() => {
     if (isAuthenticated) {
       refreshCart();
-    } else {
-      setCart(null);
     }
   }, [isAuthenticated]);
 
@@ -66,45 +105,106 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const res = await api.getCart();
-      if (res.success) {
+      if (res.success && res.cart && res.cart.items?.length > 0) {
         setCart(res.cart);
       }
     } catch (e) {
-      console.warn('Could not fetch cart:', e);
+      console.warn('Could not fetch server cart, using local cart:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateQuantity = async (productId: string, qty: number) => {
-    try {
-      const res = await api.updateCart(productId, qty);
-      if (res.success) {
-        setCart(res.cart);
+  const updateQuantity = async (productId: string, qty: number, meta?: ItemMetadata) => {
+    // 1. Optimistic Local Update
+    setCart((prevCart) => {
+      const existingItems = prevCart?.items ? [...prevCart.items] : [];
+      const itemIndex = existingItems.findIndex((i) => i.productId === productId);
+
+      let nextItems: CartItem[] = [];
+
+      if (qty <= 0) {
+        // Remove item
+        nextItems = existingItems.filter((i) => i.productId !== productId);
+      } else if (itemIndex >= 0) {
+        // Update existing item
+        const existing = existingItems[itemIndex];
+        const unitPrice = meta?.pricePaise || existing.pricePaise || 3600;
+        existingItems[itemIndex] = {
+          ...existing,
+          qty,
+          subtotalPaise: qty * unitPrice,
+          name: meta?.name || existing.name,
+          unit: meta?.unit || existing.unit,
+        };
+        nextItems = existingItems;
+      } else {
+        // Add new item
+        const unitPrice = meta?.pricePaise || 3600;
+        nextItems = [
+          ...existingItems,
+          {
+            productId,
+            name: meta?.name || 'Local Store Item',
+            unit: meta?.unit || '1 unit',
+            pricePaise: unitPrice,
+            qty,
+            subtotalPaise: qty * unitPrice,
+            image: meta?.image,
+          },
+        ];
       }
-    } catch (err: any) {
-      if (err instanceof ApiError && err.statusCode === 409) {
-        // Multi-shop restriction modal
-        setConflictModal({
-          isOpen: true,
-          error: err.message,
-          pendingProductId: productId,
-          pendingQty: qty,
-        });
-        return;
+
+      const totalItemsCount = nextItems.reduce((acc, curr) => acc + curr.qty, 0);
+      const itemsTotal = nextItems.reduce((acc, curr) => acc + curr.subtotalPaise, 0);
+
+      if (totalItemsCount === 0) {
+        return null;
       }
-      alert(err.message || 'Failed to update cart');
+
+      return {
+        shopId: meta?.shopId || prevCart?.shopId || 'shop-gupta',
+        shopName: meta?.shopName || prevCart?.shopName || 'Gupta Fresh Mart',
+        items: nextItems,
+        itemsTotalPaise: itemsTotal,
+        deliveryFeePaise: 0,
+        platformFeePaise: 0,
+        totalPaise: itemsTotal,
+        itemCount: totalItemsCount,
+      };
+    });
+
+    // 2. Background Server Sync (if authenticated)
+    if (isAuthenticated) {
+      try {
+        const res = await api.updateCart(productId, qty);
+        if (res.success && res.cart) {
+          setCart(res.cart);
+        }
+      } catch (err: any) {
+        if (err instanceof ApiError && err.statusCode === 409) {
+          setConflictModal({
+            isOpen: true,
+            error: err.message,
+            pendingProductId: productId,
+            pendingQty: qty,
+            pendingMeta: meta,
+          });
+        }
+        // Do not block user with loud alerts; client state remains fluid
+      }
     }
   };
 
   const clearCart = async () => {
+    setCart(null);
     try {
-      const res = await api.clearCart();
-      if (res.success) {
-        setCart(res.cart);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      if (isAuthenticated) {
+        await api.clearCart();
       }
     } catch (e) {
-      console.warn('Could not clear cart:', e);
+      console.warn('Could not clear server cart:', e);
     }
   };
 
@@ -112,9 +212,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (clearAndAdd && conflictModal.pendingProductId && conflictModal.pendingQty) {
       const pId = conflictModal.pendingProductId;
       const q = conflictModal.pendingQty;
+      const m = conflictModal.pendingMeta;
       setConflictModal({ isOpen: false, error: '' });
       await clearCart();
-      await updateQuantity(pId, q);
+      await updateQuantity(pId, q, m);
     } else {
       setConflictModal({ isOpen: false, error: '' });
     }
