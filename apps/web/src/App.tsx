@@ -38,7 +38,7 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage.js';
 import { PolicyPages } from './pages/legal/PolicyPages.js';
 
 const MainApp: React.FC = () => {
-  const { activeRole } = useAuth();
+  const { activeRole, isAuthenticated } = useAuth();
   
   // App splash screen from Figma design
   const [showSplash, setShowSplash] = useState<boolean>(true);
@@ -50,6 +50,13 @@ const MainApp: React.FC = () => {
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [legalPage, setLegalPage] = useState<string>('terms');
   const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // When unauthenticated, always show Figma Landing Screen
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setShowFigmaLanding(true);
+    }
+  }, [isAuthenticated]);
 
   // Switch initial tab when role perspective switches
   useEffect(() => {
@@ -214,46 +221,28 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8faf9] flex flex-col antialiased">
-      {/* Floating Pill to Switch back to the Figma Welcome Screen & Splash anytime */}
-      <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5">
-        <button
-          onClick={() => setShowSplash(true)}
-          className="bg-emerald-800/90 hover:bg-emerald-900 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg border border-white/20 transition flex items-center gap-1"
-          title="Replay Figma Splash Screen"
-        >
-          <span>Splash</span>
-          <span>▶</span>
-        </button>
-        <button
-          onClick={() => setShowFigmaLanding(true)}
-          className="bg-[#1b5e39] hover:bg-[#154e2e] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg border border-white/20 transition flex items-center gap-1"
-          title="Return to Figma Landing Screen"
-        >
-          <span>Figma Screen</span>
-          <span>↺</span>
-        </button>
+    <div className="min-h-screen bg-[#eaede9] flex justify-center antialiased font-sans">
+      <div className="w-full max-w-[430px] min-h-screen bg-white sm:my-4 sm:rounded-[36px] sm:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col justify-between border-0 sm:border border-slate-200/60 relative">
+        {/* PWA Mobile Install Banner for Android & iOS */}
+        <InstallPwaBanner />
+
+        {/* Top Mobile Navbar */}
+        <Navbar onOpenAuth={() => setAuthModalOpen(true)} />
+
+        {/* Main View Area */}
+        <main className="flex-1 w-full overflow-y-auto">
+          {renderContent()}
+        </main>
+
+        {/* Bottom Navigation */}
+        <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
+
+        {/* Multi-Shop Constraint Modal */}
+        <MultiShopModal />
+
+        {/* Figma Designed AapnaCart Auth Modal */}
+        <AapnaCartAuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
-
-      {/* PWA Mobile Install Banner for Android & iOS */}
-      <InstallPwaBanner />
-
-      {/* Top Mobile Navbar */}
-      <Navbar onOpenAuth={() => setAuthModalOpen(true)} />
-
-      {/* Main View Area */}
-      <main className="flex-1 w-full max-w-md mx-auto">
-        {renderContent()}
-      </main>
-
-      {/* Bottom Navigation */}
-      <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
-
-      {/* Multi-Shop Constraint Modal */}
-      <MultiShopModal />
-
-      {/* Figma Designed AapnaCart Auth Modal */}
-      <AapnaCartAuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 };

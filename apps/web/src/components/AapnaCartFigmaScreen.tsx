@@ -78,41 +78,6 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
     <div className="min-h-screen bg-[#eaede9] flex flex-col items-center justify-center p-0 sm:p-6 select-none font-sans relative">
       
       {/* 
-        EXTERNAL FLOATING PERSONA SHORTCUTS (OUTSIDE THE PHONE FRAME)
-        Discreet, handy for developer/pilot walkthroughs without touching Figma screen canvas
-      */}
-      <div className="hidden lg:flex items-center gap-2 fixed top-4 right-4 z-50 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-md text-xs">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pilot Switcher:</span>
-        <button
-          onClick={() => { quickLoginAs('customer'); onEnterApp(); }}
-          className="text-[#1b5e39] font-bold hover:underline flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-emerald-50 transition"
-        >
-          <User className="w-3 h-3" /> Customer
-        </button>
-        <span className="text-slate-300">•</span>
-        <button
-          onClick={handleShopkeeperClick}
-          className="text-[#1b5e39] font-bold hover:underline flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-emerald-50 transition"
-        >
-          <Store className="w-3 h-3" /> Shopkeeper
-        </button>
-        <span className="text-slate-300">•</span>
-        <button
-          onClick={() => { quickLoginAs('admin'); onOpenAdmin(); }}
-          className="text-purple-700 font-bold hover:underline flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-purple-50 transition"
-        >
-          <Shield className="w-3 h-3" /> Admin
-        </button>
-        <span className="text-slate-300">•</span>
-        <button
-          onClick={onEnterApp}
-          className="text-slate-600 font-semibold hover:text-slate-900 transition flex items-center gap-1"
-        >
-          Explore Catalog <ArrowRight className="w-3 h-3" />
-        </button>
-      </div>
-
-      {/* 
         DEVICE FRAME CONTAINER
         Exact 1:1 match of Figma Canvas screen
       */}
@@ -121,26 +86,10 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
         {/* TOP SECTION */}
         <div>
           {/* Top Sage Gradient Background with Decorative Ring and Basket Photo */}
-          <div className="relative bg-gradient-to-b from-[#e8f3ea] via-[#f2f7f3] to-white pt-3 pb-8 px-6 overflow-hidden">
-            
-            {/* Status Bar: 9:41 on left, dots + battery on right */}
-            <div className="flex items-center justify-between text-[11px] font-bold text-[#1f2937] pt-1 pb-4">
-              <span className="font-semibold tracking-tight text-[13px]">9:41</span>
-              <div className="flex items-center gap-2 opacity-90">
-                {/* 3 Dots */}
-                <span className="text-[10px] tracking-widest font-black leading-none text-[#1f2937]">•••</span>
-                {/* Battery Pill */}
-                <div className="flex items-center">
-                  <div className="w-5 h-2.5 rounded-[4px] border border-current p-[1px] flex items-center">
-                    <div className="h-full w-full bg-current rounded-[2px]" />
-                  </div>
-                  <div className="w-[1px] h-1 bg-current rounded-r-xs ml-[1px]" />
-                </div>
-              </div>
-            </div>
+          <div className="relative bg-gradient-to-b from-[#e8f3ea] via-[#f2f7f3] to-white pt-7 pb-8 px-6 overflow-hidden">
 
             {/* AapnaCart Logo */}
-            <div className="flex items-center gap-2.5 mt-1">
+            <div className="flex items-center gap-2.5">
               {/* Green rounded icon with bag & orange dot */}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#236842] to-[#175132] flex items-center justify-center shadow-xs">
                 <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

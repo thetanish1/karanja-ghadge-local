@@ -17,12 +17,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
-      {/* Community Pilot Banner */}
-      <div className="bg-[#1b5e39] text-white text-[11px] px-3 py-1 text-center font-medium flex items-center justify-center gap-1.5 shadow-inner">
-        <span className="inline-block w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-        <span>AapnaCart Pilot: Free delivery & zero commissions in Karanjaghadge</span>
-      </div>
-
       <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
         {/* Brand Logo & Location */}
         <div className="flex items-center gap-2">
