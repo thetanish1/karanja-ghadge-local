@@ -22,10 +22,28 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
   return R * c;
 }
 
+const DEFAULT_CATEGORIES = [
+  { name: 'Vegetables & Fruits', slug: 'vegetables-fruits', icon: '🥬', sortOrder: 1 },
+  { name: 'Dairy & Milk', slug: 'dairy', icon: '🥛', sortOrder: 2 },
+  { name: 'Grocery & Kirana', slug: 'grocery', icon: '🛒', sortOrder: 3 },
+  { name: 'Cloth & Fashion', slug: 'cloth', icon: '👕', sortOrder: 4 },
+  { name: 'Mobile & Accessories', slug: 'mobile', icon: '📱', sortOrder: 5 },
+  { name: 'Electric (Wire, Bulb, Lighting)', slug: 'electric', icon: '💡', sortOrder: 6 },
+  { name: 'Electronic (TV, AC, Fridge)', slug: 'electronic', icon: '📺', sortOrder: 7 },
+  { name: 'Fireworks & Crackers', slug: 'fireworks', icon: '🎆', sortOrder: 8 },
+  { name: 'Bakery & Snacks', slug: 'bakery', icon: '🥐', sortOrder: 9 },
+];
+
 // Public: List categories
 router.get('/categories', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const categories = await CategoryModel.find({ active: true }).sort({ sortOrder: 1, name: 1 });
+    let categories = await CategoryModel.find({ active: true }).sort({ sortOrder: 1, name: 1 });
+    if (categories.length === 0) {
+      await CategoryModel.insertMany(
+        DEFAULT_CATEGORIES.map((c) => ({ ...c, active: true }))
+      );
+      categories = await CategoryModel.find({ active: true }).sort({ sortOrder: 1, name: 1 });
+    }
     res.json({ success: true, count: categories.length, categories });
   } catch (err) {
     next(err);

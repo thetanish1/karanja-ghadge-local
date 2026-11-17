@@ -78,11 +78,15 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
             onChange={(e) => setCategory(e.target.value)}
             className="w-full h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white text-xs font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1b5e39]"
           >
-            <option value="Vegetables">Vegetables</option>
-            <option value="Dairy">Dairy</option>
-            <option value="Grocery">Grocery</option>
-            <option value="Bakery">Bakery</option>
-            <option value="Fruits">Fruits</option>
+            <option value="Vegetables">Vegetables & Fruits</option>
+            <option value="Dairy">Dairy & Milk</option>
+            <option value="Grocery">Grocery & Kirana</option>
+            <option value="Cloth">Cloth & Fashion</option>
+            <option value="Mobile">Mobile & Accessories</option>
+            <option value="Electric">Electric (Wire, Bulb, Lighting)</option>
+            <option value="Electronic">Electronic (TV, AC, Fridge)</option>
+            <option value="Fireworks">Fireworks & Crackers</option>
+            <option value="Bakery">Bakery & Snacks</option>
           </select>
         </div>
 

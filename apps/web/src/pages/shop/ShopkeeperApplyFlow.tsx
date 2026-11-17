@@ -36,12 +36,16 @@ export const ShopkeeperApplyFlow: React.FC<ShopkeeperApplyFlowProps> = ({
   const [submittedShop, setSubmittedShop] = useState<any | null>(null);
 
   const categories = [
-    'Grocery & vegetables',
+    'Grocery & Kirana',
+    'Cloth & Fashion (Men, Women, Kids)',
+    'Mobile & Accessories (Phones, Chargers)',
+    'Electric (Wire, Bulb, Lighting, Switches)',
+    'Electronic & Appliances (TV, AC, Fridge)',
+    'Fireworks & Festive (Crackers, Sparklers)',
     'Dairy, Milk & Paneer',
-    'Daily Kirana & Spices',
+    'Fresh Vegetables & Fruits',
     'Bakery & Fresh Snacks',
-    'Fruits & Seasonal Produce',
-    'Pharmacy & Essentials',
+    'Hardware & Paints',
   ];
 
   const handlePhotoUploadSimulation = (e: React.ChangeEvent<HTMLInputElement>) => {
