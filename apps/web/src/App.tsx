@@ -1,0 +1,271 @@
+import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext.js';
+import { CartProvider } from './context/CartContext.js';
+import { Navbar } from './components/Navbar.js';
+import { BottomNav } from './components/BottomNav.js';
+import { InstallPwaBanner } from './components/InstallPwaBanner.js';
+import { MultiShopModal } from './components/MultiShopModal.js';
+import { AapnaCartAuthModal } from './components/AapnaCartAuthModal.js';
+import { AapnaCartFigmaScreen } from './components/AapnaCartFigmaScreen.js';
+import { SplashScreen } from './components/SplashScreen.js';
+
+// Customer Pages
+import { HomePage } from './pages/customer/HomePage.js';
+import { ShopDetailPage } from './pages/customer/ShopDetailPage.js';
+import { SearchPage } from './pages/customer/SearchPage.js';
+import { CartPage } from './pages/customer/CartPage.js';
+import { CheckoutPage } from './pages/customer/CheckoutPage.js';
+import { OrderStatusPage } from './pages/customer/OrderStatusPage.js';
+import { OrderHistoryPage } from './pages/customer/OrderHistoryPage.js';
+import { AccountPage } from './pages/customer/AccountPage.js';
+
+// Shopkeeper Pages
+import { OrderQueuePage } from './pages/shop/OrderQueuePage.js';
+import { ProductsManagePage } from './pages/shop/ProductsManagePage.js';
+import { ShopStorePage } from './pages/shop/ShopStorePage.js';
+import { ShopApplyPage } from './pages/shop/ShopApplyPage.js';
+
+// Delivery Pages
+import { DeliveryTasksPage } from './pages/delivery/DeliveryTasksPage.js';
+
+// Admin Pages
+import { AdminOverviewPage } from './pages/admin/AdminOverviewPage.js';
+import { ShopApprovalsPage } from './pages/admin/ShopApprovalsPage.js';
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage.js';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage.js';
+
+// Legal Pages
+import { PolicyPages } from './pages/legal/PolicyPages.js';
+
+const MainApp: React.FC = () => {
+  const { activeRole } = useAuth();
+  
+  // App splash screen from Figma design
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+
+  // Show the exact Figma design screen by default
+  const [showFigmaLanding, setShowFigmaLanding] = useState<boolean>(true);
+  const [currentTab, setCurrentTab] = useState<string>('home');
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [legalPage, setLegalPage] = useState<string>('terms');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Switch initial tab when role perspective switches
+  useEffect(() => {
+    switch (activeRole) {
+      case 'shopkeeper':
+        setCurrentTab('shop-queue');
+        break;
+      case 'delivery_partner':
+        setCurrentTab('delivery-tasks');
+        break;
+      case 'admin':
+        setCurrentTab('admin-overview');
+        break;
+      case 'customer':
+      default:
+        setCurrentTab('home');
+        break;
+    }
+  }, [activeRole]);
+
+  const handleSelectShop = (shopId: string) => {
+    setSelectedShopId(shopId);
+    setCurrentTab('shop-detail');
+  };
+
+  const handleSelectOrder = (orderId: string) => {
+    setActiveOrderId(orderId);
+    setCurrentTab('order-status');
+  };
+
+  const handleOpenLegal = (pageName: string) => {
+    setLegalPage(pageName);
+    setCurrentTab('legal');
+  };
+
+  // 1. FIGMA DESIGNED SPLASH SCREEN
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} durationMs={2400} />;
+  }
+
+  // 2. FIGMA DESIGNED WELCOME & ONBOARDING LANDING
+  if (showFigmaLanding) {
+    return (
+      <AapnaCartFigmaScreen
+        onEnterApp={() => setShowFigmaLanding(false)}
+        onOpenShopkeeper={() => {
+          setShowFigmaLanding(false);
+          setCurrentTab('shop-queue');
+        }}
+        onOpenAdmin={() => {
+          setShowFigmaLanding(false);
+          setCurrentTab('admin-overview');
+        }}
+      />
+    );
+  }
+
+  const renderContent = () => {
+    switch (currentTab) {
+      // Customer Views
+      case 'home':
+        return (
+          <HomePage
+            onSelectShop={handleSelectShop}
+            onNavigateSearch={() => setCurrentTab('search')}
+          />
+        );
+      case 'shop-detail':
+        return (
+          <ShopDetailPage
+            shopId={selectedShopId || ''}
+            onBack={() => setCurrentTab('home')}
+            onNavigateCart={() => setCurrentTab('cart')}
+          />
+        );
+      case 'search':
+        return <SearchPage onSelectShop={handleSelectShop} />;
+      case 'cart':
+        return (
+          <CartPage
+            onProceedToCheckout={() => setCurrentTab('checkout')}
+            onBrowseShops={() => setCurrentTab('home')}
+            onOpenAuth={() => setAuthModalOpen(true)}
+          />
+        );
+      case 'checkout':
+        return (
+          <CheckoutPage
+            onBack={() => setCurrentTab('cart')}
+            onOrderSuccess={(orderId) => {
+              setActiveOrderId(orderId);
+              setCurrentTab('order-status');
+            }}
+          />
+        );
+      case 'order-status':
+        return (
+          <OrderStatusPage
+            orderId={activeOrderId || ''}
+            onBack={() => setCurrentTab('orders')}
+            onBrowseShops={() => setCurrentTab('home')}
+          />
+        );
+      case 'orders':
+        return (
+          <OrderHistoryPage
+            onSelectOrder={handleSelectOrder}
+            onBrowseShops={() => setCurrentTab('home')}
+            onOpenAuth={() => setAuthModalOpen(true)}
+          />
+        );
+      case 'account':
+        return (
+          <AccountPage
+            onOpenLegal={handleOpenLegal}
+            onApplyShop={() => setCurrentTab('shop-apply')}
+            onOpenAuth={() => setAuthModalOpen(true)}
+          />
+        );
+
+      // Shopkeeper Views
+      case 'shop-queue':
+        return <OrderQueuePage />;
+      case 'shop-products':
+        return <ProductsManagePage />;
+      case 'shop-store':
+        return <ShopStorePage />;
+      case 'shop-apply':
+        return (
+          <ShopApplyPage
+            onBack={() => setCurrentTab('account')}
+            onSuccess={() => setCurrentTab('shop-queue')}
+          />
+        );
+
+      // Delivery Views
+      case 'delivery-tasks':
+        return <DeliveryTasksPage />;
+
+      // Admin Views
+      case 'admin-overview':
+        return <AdminOverviewPage onNavigateTab={(tab) => setCurrentTab(tab)} />;
+      case 'admin-shops':
+        return <ShopApprovalsPage />;
+      case 'admin-orders':
+        return <AdminOrdersPage />;
+      case 'admin-settings':
+        return <AdminSettingsPage />;
+
+      // Legal & Help Views
+      case 'legal':
+        return (
+          <PolicyPages
+            page={legalPage}
+            onBack={() => setCurrentTab('account')}
+          />
+        );
+
+      default:
+        return <HomePage onSelectShop={handleSelectShop} onNavigateSearch={() => setCurrentTab('search')} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f8faf9] flex flex-col antialiased">
+      {/* Floating Pill to Switch back to the Figma Welcome Screen & Splash anytime */}
+      <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5">
+        <button
+          onClick={() => setShowSplash(true)}
+          className="bg-emerald-800/90 hover:bg-emerald-900 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg border border-white/20 transition flex items-center gap-1"
+          title="Replay Figma Splash Screen"
+        >
+          <span>Splash</span>
+          <span>▶</span>
+        </button>
+        <button
+          onClick={() => setShowFigmaLanding(true)}
+          className="bg-[#1b5e39] hover:bg-[#154e2e] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg border border-white/20 transition flex items-center gap-1"
+          title="Return to Figma Landing Screen"
+        >
+          <span>Figma Screen</span>
+          <span>↺</span>
+        </button>
+      </div>
+
+      {/* PWA Mobile Install Banner for Android & iOS */}
+      <InstallPwaBanner />
+
+      {/* Top Mobile Navbar */}
+      <Navbar onOpenAuth={() => setAuthModalOpen(true)} />
+
+      {/* Main View Area */}
+      <main className="flex-1 w-full max-w-md mx-auto">
+        {renderContent()}
+      </main>
+
+      {/* Bottom Navigation */}
+      <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
+
+      {/* Multi-Shop Constraint Modal */}
+      <MultiShopModal />
+
+      {/* Figma Designed AapnaCart Auth Modal */}
+      <AapnaCartAuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <MainApp />
+      </CartProvider>
+    </AuthProvider>
+  );
+};
+
+export default App;
