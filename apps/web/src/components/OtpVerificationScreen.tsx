@@ -73,7 +73,7 @@ export const OtpVerificationScreen: React.FC<OtpVerificationScreenProps> = ({
           <div className="pt-2 pb-6">
             <button
               onClick={onBack}
-              className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer"
+              className="w-11 h-11 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -153,7 +153,7 @@ export const OtpVerificationScreen: React.FC<OtpVerificationScreenProps> = ({
           <button
             onClick={handleVerify}
             disabled={loading || digits.join('').length < 4}
-            className="w-full h-13 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] disabled:opacity-50 text-white font-bold text-sm rounded-[16px] shadow-sm transition flex items-center justify-center cursor-pointer"
+            className="w-full h-14 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] disabled:opacity-50 text-white font-bold text-base rounded-2xl shadow-md transition flex items-center justify-center cursor-pointer tracking-wide"
           >
             {loading ? 'Verifying...' : 'Verify & continue'}
           </button>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext.js';
 import { ArrowLeft, Heart, Search, Star, Clock, Truck, Check, Plus, Minus, ChevronRight } from 'lucide-react';
+import { AddToCartModal, AddedProductItem } from '../../components/AddToCartModal.js';
 
 interface ShopDetailPageProps {
   shopId: string;
@@ -16,6 +17,8 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
   const { cart, updateQuantity } = useCart();
   const [activeTab, setActiveTab] = useState('bestsellers');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [addedModalProduct, setAddedModalProduct] = useState<AddedProductItem | null>(null);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
   const shop = {
     name: 'Gupta Fresh Mart',
@@ -233,25 +236,49 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
 
                     {qty === 0 ? (
                       <button
-                        onClick={() => updateQuantity(p.id, 1)}
-                        className="px-3 py-1 rounded-lg border border-[#1b5e39] text-[#1b5e39] hover:bg-[#1b5e39] hover:text-white text-xs font-bold transition cursor-pointer"
+                        onClick={() => {
+                          updateQuantity(p.id, 1);
+                          setAddedModalProduct({
+                            id: p.id,
+                            name: p.name,
+                            unit: p.unit,
+                            price: p.price,
+                            mrp: p.mrp,
+                            image: p.image,
+                            shopName: shop.name,
+                          });
+                          setShowAddModal(true);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl border-2 border-[#1b5e39] text-[#1b5e39] hover:bg-[#1b5e39] hover:text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
                       >
-                        ADD
+                        ADD +
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2 bg-[#1b5e39] text-white rounded-lg px-2 py-1 text-xs font-bold shadow-xs">
+                      <div className="flex items-center gap-2 bg-[#1b5e39] text-white rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-xs">
                         <button
                           onClick={() => updateQuantity(p.id, qty - 1)}
                           className="hover:opacity-80 cursor-pointer"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="min-w-[12px] text-center">{qty}</span>
+                        <span className="min-w-[14px] text-center font-bold">{qty}</span>
                         <button
-                          onClick={() => updateQuantity(p.id, qty + 1)}
+                          onClick={() => {
+                            updateQuantity(p.id, qty + 1);
+                            setAddedModalProduct({
+                              id: p.id,
+                              name: p.name,
+                              unit: p.unit,
+                              price: p.price,
+                              mrp: p.mrp,
+                              image: p.image,
+                              shopName: shop.name,
+                            });
+                            setShowAddModal(true);
+                          }}
                           className="hover:opacity-80 cursor-pointer"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
@@ -261,6 +288,14 @@ export const ShopDetailPage: React.FC<ShopDetailPageProps> = ({
             })}
           </div>
         </div>
+
+        {/* Interactive Add to Cart Popup Modal */}
+        <AddToCartModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          product={addedModalProduct}
+          onViewCart={onNavigateCart}
+        />
 
       </div>
     </div>

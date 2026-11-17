@@ -105,49 +105,49 @@ export const DeliveryLocationScreen: React.FC<DeliveryLocationScreenProps> = ({
           {/* Use Current Location Card */}
           <button
             onClick={() => handleSelect(currentAddress)}
-            className={`w-full p-3.5 rounded-[18px] border text-left flex items-center justify-between transition cursor-pointer ${
+            className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer ${
               selectedLocation === currentAddress
                 ? 'border-[#1b5e39] bg-[#e8f3ea]/40'
                 : 'border-slate-200 hover:border-slate-300 bg-white'
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#e8f3ea] flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-4 h-4 text-[#1b5e39]" />
+              <div className="w-10 h-10 rounded-xl bg-[#e8f3ea] flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-[#1b5e39]" />
               </div>
               <div>
-                <div className="text-xs font-bold text-[#111827]">Use current location</div>
-                <div className="text-[11px] text-[#6b7280] truncate max-w-[210px] mt-0.5">
+                <div className="text-sm font-bold text-[#111827]">Use current location</div>
+                <div className="text-xs text-[#6b7280] truncate max-w-[210px] mt-0.5">
                   {currentAddress}
                 </div>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-5 h-5 text-slate-400" />
           </button>
 
           {/* "- or -" divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-[11px] text-slate-400 font-medium">or</span>
+            <span className="text-xs text-slate-400 font-medium">or</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
           {/* Search Area / Landmark Input */}
-          <div className="flex items-center h-12 border border-[#e2e8f0] rounded-[16px] px-3.5 bg-white shadow-xs focus-within:ring-2 focus-within:ring-[#1b5e39] focus-within:border-[#1b5e39] transition">
-            <Search className="w-4 h-4 text-[#9ca3af] mr-2 flex-shrink-0" />
+          <div className="flex items-center h-14 border border-[#e2e8f0] rounded-2xl px-4 bg-white shadow-xs focus-within:ring-2 focus-within:ring-[#1b5e39] focus-within:border-[#1b5e39] transition">
+            <Search className="w-4 h-4 text-[#9ca3af] mr-2.5 flex-shrink-0" />
             <input
               type="text"
               placeholder="Search area, street or landmark"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 text-xs text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
+              className="flex-1 text-sm text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
             />
           </div>
 
           {/* Confirm Button */}
           <button
             onClick={() => onConfirm(searchQuery.trim() || selectedLocation)}
-            className="w-full h-13 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] text-white font-bold text-sm rounded-[16px] shadow-sm transition flex items-center justify-center cursor-pointer mt-2"
+            className="w-full h-14 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] text-white font-bold text-base rounded-2xl shadow-md transition flex items-center justify-center cursor-pointer mt-2"
           >
             Confirm this location
           </button>

@@ -151,10 +151,13 @@ export const api = {
   getMyShops: () => request<{ success: boolean; shops: any[] }>('/shops/my-shops'),
 
   applyShop: (data: any) =>
-    request<{ success: boolean; shop: any }>('/shops/apply', {
+    request<{ success: boolean; shop: any; emailNotification?: any }>('/shops/apply', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  checkShopApplicationStatus: (id: string) =>
+    request<{ success: boolean; shop: any }>(`/shops/application-status/${id}`),
 
   updateShopAvailability: (shopId: string, data: { isPaused?: boolean; hours?: any }) =>
     request<{ success: boolean; isPaused: boolean; hours: any }>(`/shops/${shopId}/availability`, {

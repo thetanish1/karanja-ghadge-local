@@ -102,6 +102,8 @@ export const AddressModel = mongoose.model<IAddress>('Address', AddressSchema);
 export interface IShop extends Document {
   name: string;
   ownerId: mongoose.Types.ObjectId;
+  ownerName?: string;
+  email?: string;
   description: string;
   phone: string;
   address: string;
@@ -120,6 +122,7 @@ export interface IShop extends Document {
   minOrderPaise: number;
   categoryIds: mongoose.Types.ObjectId[];
   bannerUrl?: string;
+  photos?: string[];
   verificationDocs?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -129,6 +132,8 @@ const ShopSchema = new Schema<IShop>(
   {
     name: { type: String, required: true, index: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    ownerName: { type: String, default: '' },
+    email: { type: String, default: '' },
     description: { type: String, default: '' },
     phone: { type: String, required: true },
     address: { type: String, required: true },
@@ -156,6 +161,7 @@ const ShopSchema = new Schema<IShop>(
     minOrderPaise: { type: Number, default: 0 },
     categoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
     bannerUrl: { type: String },
+    photos: [{ type: String }],
     verificationDocs: [{ type: String }],
   },
   { timestamps: true }

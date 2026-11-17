@@ -24,7 +24,7 @@ import { AccountPage } from './pages/customer/AccountPage.js';
 
 // Shopkeeper Pages
 import { ShopkeeperPortal } from './pages/shop/ShopkeeperPortal.js';
-import { ShopApplyPage } from './pages/shop/ShopApplyPage.js';
+import { ShopkeeperApplyFlow } from './pages/shop/ShopkeeperApplyFlow.js';
 
 // Delivery Pages
 import { DeliveryTasksPage } from './pages/delivery/DeliveryTasksPage.js';
@@ -140,6 +140,7 @@ const MainApp: React.FC = () => {
             onSelectShop={handleSelectShop}
             onNavigateShops={() => setCurrentTab('shops')}
             onNavigateSearch={() => setCurrentTab('search')}
+            onNavigateCart={() => setCurrentTab('cart')}
           />
         );
       case 'shops':
@@ -213,9 +214,9 @@ const MainApp: React.FC = () => {
         return <ShopkeeperPortal onBackToCustomer={() => setCurrentTab('home')} />;
       case 'shop-apply':
         return (
-          <ShopApplyPage
+          <ShopkeeperApplyFlow
             onBack={() => setCurrentTab('account')}
-            onSuccess={() => setCurrentTab('shopkeeper-portal')}
+            onEnterPortalDirectly={() => setCurrentTab('shopkeeper-portal')}
           />
         );
 
@@ -248,6 +249,7 @@ const MainApp: React.FC = () => {
             onSelectShop={handleSelectShop}
             onNavigateShops={() => setCurrentTab('shops')}
             onNavigateSearch={() => setCurrentTab('search')}
+            onNavigateCart={() => setCurrentTab('cart')}
           />
         );
     }

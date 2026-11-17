@@ -94,10 +94,39 @@ export const ShopApprovalsPage: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900">{s.name}</h3>
                     <StatusBadge status={s.status} />
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">{s.description}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{s.address}</p>
+                  {s.ownerName && (
+                    <p className="text-xs font-semibold text-slate-700 mt-0.5">
+                      Owner: {s.ownerName}
+                    </p>
+                  )}
+                  {s.email && (
+                    <p className="text-xs text-blue-600 font-medium">
+                      ✉ {s.email}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 mt-0.5">{s.description || 'Local business in Karanja (Ghadge)'}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">📍 {s.address}</p>
+                  {s.hours && (
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      🕒 Hours: {s.hours.open || '08:00'} - {s.hours.close || '21:00'}
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {/* Photos preview if present */}
+              {s.photos && s.photos.length > 0 && (
+                <div className="pt-1 flex gap-2 overflow-x-auto pb-1">
+                  {s.photos.map((photo: string, pIdx: number) => (
+                    <img
+                      key={pIdx}
+                      src={photo}
+                      alt={`Store photo ${pIdx + 1}`}
+                      className="w-16 h-16 rounded-xl object-cover border border-slate-200"
+                    />
+                  ))}
+                </div>
+              )}
 
               <div className="text-xs text-slate-600 pt-1 flex items-center justify-between border-t border-slate-100">
                 <span>Phone: +91 {s.phone}</span>

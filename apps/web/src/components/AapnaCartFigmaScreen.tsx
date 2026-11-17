@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { api } from '../services/api.js';
 import { Store } from 'lucide-react';
 import { OtpVerificationScreen } from './OtpVerificationScreen.js';
+import { ShopkeeperApplyFlow } from '../pages/shop/ShopkeeperApplyFlow.js';
 
 interface FigmaScreenProps {
   onEnterApp: () => void;
@@ -15,7 +16,7 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
   onOpenShopkeeper,
 }) => {
   const { loginWithPhoneOtp, quickLoginAs } = useAuth();
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'shopkeeper-apply'>('phone');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -63,10 +64,23 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
     }
   };
 
-  const handleShopkeeperClick = async () => {
-    await quickLoginAs('shopkeeper');
-    onOpenShopkeeper();
+  const handleShopkeeperClick = () => {
+    // Open Shopkeeper registration & verification flow
+    setStep('shopkeeper-apply');
   };
+
+  // If in Shopkeeper Apply step, render full onboarding flow & verification screen
+  if (step === 'shopkeeper-apply') {
+    return (
+      <ShopkeeperApplyFlow
+        onBack={() => setStep('phone')}
+        onEnterPortalDirectly={async () => {
+          await quickLoginAs('shopkeeper');
+          onOpenShopkeeper();
+        }}
+      />
+    );
+  }
 
   // If in OTP step, render exact Image 1 screen
   if (step === 'otp') {
@@ -161,7 +175,7 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
                   Mobile number
                 </label>
                 {/* Figma +91 Input Box */}
-                <div className="flex items-center h-12 border border-[#e2e8f0] rounded-[14px] bg-white overflow-hidden shadow-xs focus-within:ring-2 focus-within:ring-[#1e5e3a] focus-within:border-[#1e5e3a] transition">
+                <div className="flex items-center h-14 border border-[#e2e8f0] rounded-2xl bg-white overflow-hidden shadow-xs focus-within:ring-2 focus-within:ring-[#1b5e39] focus-within:border-[#1b5e39] transition">
                   <div className="px-4 text-xs font-bold text-[#111827] border-r border-[#e2e8f0] bg-white select-none">
                     +91
                   </div>
@@ -180,20 +194,20 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-[#1e5e3a] hover:bg-[#164d2d] active:scale-[0.99] disabled:opacity-50 text-white font-bold text-sm rounded-[14px] shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full h-14 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] disabled:opacity-50 text-white font-bold text-base rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{loading ? 'Continuing...' : 'Continue'}</span>
-                <span className="text-base font-bold">→</span>
+                <span className="text-lg font-bold">→</span>
               </button>
 
               {/* Secondary Action: I'm a shopkeeper */}
-              <div className="pt-0.5 text-center">
+              <div className="pt-1 text-center">
                 <button
                   type="button"
                   onClick={handleShopkeeperClick}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1e5e3a] hover:text-[#164d2d] transition py-1 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#e8f3ea]/60 hover:bg-[#e8f3ea] text-xs font-bold text-[#1b5e39] transition cursor-pointer border border-[#cde5d2]"
                 >
-                  <Store className="w-4 h-4 text-[#1e5e3a]" />
+                  <Store className="w-4 h-4 text-[#1b5e39]" />
                   <span>I'm a shopkeeper</span>
                 </button>
               </div>
