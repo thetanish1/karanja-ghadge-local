@@ -23,9 +23,7 @@ import { OrderHistoryPage } from './pages/customer/OrderHistoryPage.js';
 import { AccountPage } from './pages/customer/AccountPage.js';
 
 // Shopkeeper Pages
-import { OrderQueuePage } from './pages/shop/OrderQueuePage.js';
-import { ProductsManagePage } from './pages/shop/ProductsManagePage.js';
-import { ShopStorePage } from './pages/shop/ShopStorePage.js';
+import { ShopkeeperPortal } from './pages/shop/ShopkeeperPortal.js';
 import { ShopApplyPage } from './pages/shop/ShopApplyPage.js';
 
 // Delivery Pages
@@ -207,18 +205,17 @@ const MainApp: React.FC = () => {
           />
         );
 
-      // Shopkeeper Views
+      // Shopkeeper Portal (Unified 4-tab Figma flow: Dashboard, Products, Orders, Sales)
       case 'shop-queue':
-        return <OrderQueuePage />;
       case 'shop-products':
-        return <ProductsManagePage />;
       case 'shop-store':
-        return <ShopStorePage />;
+      case 'shopkeeper-portal':
+        return <ShopkeeperPortal onBackToCustomer={() => setCurrentTab('home')} />;
       case 'shop-apply':
         return (
           <ShopApplyPage
             onBack={() => setCurrentTab('account')}
-            onSuccess={() => setCurrentTab('shop-queue')}
+            onSuccess={() => setCurrentTab('shopkeeper-portal')}
           />
         );
 
@@ -263,8 +260,8 @@ const MainApp: React.FC = () => {
         {/* PWA Mobile Install Banner for Android & iOS */}
         <InstallPwaBanner />
 
-        {/* Top Mobile Navbar (Hidden on store detail, cart, and tracking to match Figma screens) */}
-        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && (
+        {/* Top Mobile Navbar (Hidden on store detail, cart, tracking, and shopkeeper portal) */}
+        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && (
           <Navbar
             onOpenLocation={() => setShowLocationModal(true)}
             onOpenAccount={() => setCurrentTab('account')}
@@ -277,13 +274,13 @@ const MainApp: React.FC = () => {
           {renderContent()}
         </main>
 
-        {/* Floating Cart Bar (appears when items in cart, hidden on cart and tracking) */}
-        {currentTab !== 'cart' && currentTab !== 'orders' && (
+        {/* Floating Cart Bar (appears when items in cart, hidden on cart, tracking, and shopkeeper) */}
+        {currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && (
           <FloatingCartBar onOpenCart={() => setCurrentTab('cart')} />
         )}
 
-        {/* Bottom Navigation (matching Figma 4 tabs) */}
-        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'shop-detail' && (
+        {/* Bottom Navigation (matching Figma 4 tabs, hidden in shopkeeper) */}
+        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'shop-detail' && !currentTab.startsWith('shop') && (
           <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
         )}
 
