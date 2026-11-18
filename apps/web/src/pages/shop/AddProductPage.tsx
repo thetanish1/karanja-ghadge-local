@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../services/api.js';
+import { ArrowLeft, Plus, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface AddProductPageProps {
   onBack: () => void;
@@ -10,27 +11,104 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
   onBack,
   onSaveSuccess,
 }) => {
-  const [name, setName] = useState('Fresh Green Capsicum');
-  const [category, setCategory] = useState('Vegetables');
-  const [packSize, setPackSize] = useState('500 g');
-  const [sellingPrice, setSellingPrice] = useState('48');
-  const [mrp, setMrp] = useState('60');
-  const [stockQuantity, setStockQuantity] = useState('24');
-  const [description, setDescription] = useState('Fresh, crisp green capsicum sourced from local farms.');
+  const [shopId, setShopId] = useState<string>('');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [name, setName] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [packSize, setPackSize] = useState('');
+  const [sellingPrice, setSellingPrice] = useState('');
+  const [mrp, setMrp] = useState('');
+  const [stockQuantity, setStockQuantity] = useState('25');
+  const [description, setDescription] = useState('');
   const [availableForSale, setAvailableForSale] = useState(true);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Load shop and categories
+    Promise.all([
+      api.getMyShops().catch(() => ({ success: false, shops: [] })),
+      api.getCategories().catch(() => ({ success: false, categories: [] })),
+    ]).then(([shopsRes, catsRes]) => {
+      if (shopsRes.success && shopsRes.shops?.length > 0) {
+        setShopId(shopsRes.shops[0]._id);
+      }
+      if (catsRes.success && catsRes.categories?.length > 0) {
+        setCategories(catsRes.categories);
+        setCategoryId(catsRes.categories[0]._id);
+      }
+    });
+  }, []);
+
+  const handleAddImageUrl = () => {
+    if (imageUrlInput.trim() && imageUrls.length < 4) {
+      setImageUrls([...imageUrls, imageUrlInput.trim()]);
+      setImageUrlInput('');
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImageUrls(imageUrls.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => {
-      onSaveSuccess();
-    }, 600);
+    setError('');
+
+    if (!name.trim()) {
+      setError('Please provide a product name.');
+      return;
+    }
+    const priceNum = parseFloat(sellingPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setError('Please enter a valid selling price greater than 0.');
+      return;
+    }
+    const mrpNum = mrp ? parseFloat(mrp) : priceNum;
+    if (mrpNum < priceNum) {
+      setError('MRP cannot be lower than the selling price.');
+      return;
+    }
+    if (!packSize.trim()) {
+      setError('Please specify the unit or pack size (e.g. 500 g, 1 L, 1 pc).');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const targetShopId = shopId || 'shop-default';
+      const res = await api.createProduct(targetShopId, {
+        name: name.trim(),
+        unit: packSize.trim(),
+        pricePaise: Math.round(priceNum * 100),
+        mrpPaise: Math.round(mrpNum * 100),
+        categoryId: categoryId || undefined,
+        description: description.trim() || undefined,
+        stockQuantity: parseInt(stockQuantity) || 25,
+        stockStatus: availableForSale ? 'in_stock' : 'out_of_stock',
+        imageKeys: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80'],
+      });
+
+      if (res.success) {
+        setSaved(true);
+        setTimeout(() => {
+          onSaveSuccess();
+        }, 500);
+      } else {
+        setError('Could not save product. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error creating product.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f8faf9] flex flex-col justify-between font-sans select-none pb-12">
-      
       {/* 1. Header */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-slate-100">
         <button
@@ -44,23 +122,60 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4 flex-1">
-        
-        {/* 2. Dashed Photo Upload Container */}
-        <div className="border-2 border-dashed border-[#cde5d2] bg-[#f8fdf9] rounded-[24px] p-6 text-center flex flex-col items-center justify-center cursor-pointer hover:bg-[#eef8f1] transition">
-          <div className="w-12 h-12 rounded-full bg-white text-[#1b5e39] border border-slate-200/80 flex items-center justify-center shadow-xs mb-2.5">
-            <Plus className="w-6 h-6 stroke-[2.5]" />
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
-          <h3 className="text-sm font-bold text-[#111827]">Add product photos</h3>
-          <p className="text-xs text-[#6b7280] mt-0.5">Upload up to 4 clear images</p>
+        )}
+
+        {/* 2. Photo Upload / URL container */}
+        <div className="border-2 border-dashed border-[#cde5d2] bg-[#f8fdf9] rounded-[24px] p-4 text-center">
+          <h3 className="text-sm font-bold text-[#111827]">Product Images</h3>
+          <p className="text-xs text-[#6b7280] mt-0.5 mb-3">Add image URLs for this product (up to 4)</p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              placeholder="Paste image URL (https://...)"
+              value={imageUrlInput}
+              onChange={(e) => setImageUrlInput(e.target.value)}
+              className="flex-1 px-3 py-2 text-xs bg-white border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#1b5e39]"
+            />
+            <button
+              type="button"
+              onClick={handleAddImageUrl}
+              className="px-4 py-2 bg-[#1b5e39] text-white rounded-xl text-xs font-bold hover:bg-[#155a34] transition"
+            >
+              Add
+            </button>
+          </div>
+
+          {imageUrls.length > 0 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto">
+              {imageUrls.map((url, i) => (
+                <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0">
+                  <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(i)}
+                    className="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center rounded-bl"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 3. Product Name */}
         <div>
           <label className="block text-xs font-semibold text-[#374151] mb-1.5">
-            Product name
+            Product name *
           </label>
           <input
             type="text"
+            placeholder="e.g. Fresh Red Tomatoes, Havells LED Bulb"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white text-xs font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1b5e39]"
@@ -74,19 +189,15 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
             Category
           </label>
           <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
             className="w-full h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white text-xs font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1b5e39]"
           >
-            <option value="Vegetables">Vegetables & Fruits</option>
-            <option value="Dairy">Dairy & Milk</option>
-            <option value="Grocery">Grocery & Kirana</option>
-            <option value="Cloth">Cloth & Fashion</option>
-            <option value="Mobile">Mobile & Accessories</option>
-            <option value="Electric">Electric (Wire, Bulb, Lighting)</option>
-            <option value="Electronic">Electronic (TV, AC, Fridge)</option>
-            <option value="Fireworks">Fireworks & Crackers</option>
-            <option value="Bakery">Bakery & Snacks</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -94,10 +205,11 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-[#374151] mb-1.5">
-              Pack size
+              Pack size / Unit *
             </label>
             <input
               type="text"
+              placeholder="e.g. 500 g, 1 L, 1 pc"
               value={packSize}
               onChange={(e) => setPackSize(e.target.value)}
               className="w-full h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white text-xs font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1b5e39]"
@@ -106,12 +218,13 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#374151] mb-1.5">
-              Selling price
+              Selling price (₹) *
             </label>
             <div className="flex items-center h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white focus-within:ring-2 focus-within:ring-[#1b5e39]">
               <span className="text-xs text-slate-400 mr-1.5">₹</span>
               <input
                 type="number"
+                placeholder="0"
                 value={sellingPrice}
                 onChange={(e) => setSellingPrice(e.target.value)}
                 className="w-full text-xs font-medium text-[#111827] focus:outline-none"
@@ -125,16 +238,16 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-[#374151] mb-1.5">
-              MRP
+              MRP (₹)
             </label>
             <div className="flex items-center h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white focus-within:ring-2 focus-within:ring-[#1b5e39]">
               <span className="text-xs text-slate-400 mr-1.5">₹</span>
               <input
                 type="number"
+                placeholder="Optional"
                 value={mrp}
                 onChange={(e) => setMrp(e.target.value)}
                 className="w-full text-xs font-medium text-[#111827] focus:outline-none"
-                required
               />
             </div>
           </div>
@@ -147,7 +260,6 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
               value={stockQuantity}
               onChange={(e) => setStockQuantity(e.target.value)}
               className="w-full h-12 px-4 rounded-[16px] border border-[#e2e8f0] bg-white text-xs font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1b5e39]"
-              required
             />
           </div>
         </div>
@@ -159,6 +271,7 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
           </label>
           <textarea
             rows={3}
+            placeholder="Details, specifications or source of this item..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full p-4 rounded-[16px] border border-[#e2e8f0] bg-white text-xs font-medium text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1b5e39] resize-none"
@@ -170,7 +283,7 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
           <div>
             <div className="text-xs font-bold text-[#111827]">Available for sale</div>
             <div className="text-[11px] text-[#6b7280] mt-0.5">
-              Customers can see and order this item
+              Customers in Karanja can immediately discover and order this item
             </div>
           </div>
 
@@ -193,14 +306,13 @@ export const AddProductPage: React.FC<AddProductPageProps> = ({
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full h-13 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] text-white font-bold text-sm rounded-[16px] shadow-sm transition flex items-center justify-center cursor-pointer"
+            disabled={loading}
+            className="w-full h-13 bg-[#1b5e39] hover:bg-[#164d2d] active:scale-[0.99] disabled:opacity-50 text-white font-bold text-sm rounded-[16px] shadow-sm transition flex items-center justify-center cursor-pointer"
           >
-            {saved ? 'Saved!' : 'Save product'}
+            {loading ? 'Saving to Catalog...' : saved ? 'Saved Successfully!' : 'Save Product'}
           </button>
         </div>
-
       </form>
-
     </div>
   );
 };

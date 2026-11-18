@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../services/api.js';
 import { useCart } from '../../context/CartContext.js';
 import { Search, ChevronRight, Clock, Star, Plus, Minus, ArrowRight, Check, SlidersHorizontal } from 'lucide-react';
 
@@ -9,349 +10,98 @@ interface HomePageProps {
   onNavigateCart?: () => void;
 }
 
+const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
+  'vegetables': { emoji: '🥬', bg: 'bg-[#ecf7ee]' },
+  'dairy': { emoji: '🥛', bg: 'bg-[#eff6ff]' },
+  'grocery': { emoji: '🛒', bg: 'bg-[#f5f3ff]' },
+  'bakery': { emoji: '🥐', bg: 'bg-[#fffbeb]' },
+  'cloth': { emoji: '👕', bg: 'bg-[#fdf4ff]' },
+  'mobile': { emoji: '📱', bg: 'bg-[#f0f9ff]' },
+  'electric': { emoji: '💡', bg: 'bg-[#fefce8]' },
+  'electronic': { emoji: '📺', bg: 'bg-[#eef2ff]' },
+  'fireworks': { emoji: '🎆', bg: 'bg-[#fff7ed]' },
+};
+
+const SHOP_FALLBACK_IMAGES: Record<string, string> = {
+  'vegetables': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
+  'dairy': 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?w=400&auto=format&fit=crop&q=80',
+  'grocery': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
+  'bakery': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80',
+  'cloth': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&auto=format&fit=crop&q=80',
+  'mobile': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80',
+  'electric': 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=400&auto=format&fit=crop&q=80',
+  'electronic': 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=400&auto=format&fit=crop&q=80',
+  'fireworks': 'https://images.unsplash.com/photo-1498931299472-f7a63a5a1cfa?w=400&auto=format&fit=crop&q=80',
+};
+
 export const HomePage: React.FC<HomePageProps> = ({
   onSelectShop,
   onNavigateShops,
   onNavigateSearch,
-  onNavigateCart,
 }) => {
   const { cart, updateQuantity } = useCart();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [shops, setShops] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loadingCats, setLoadingCats] = useState(true);
+  const [loadingShops, setLoadingShops] = useState(true);
+  const [loadingProds, setLoadingProds] = useState(true);
 
-  // Expanded local products covering all local Karanja market categories
-  const popularProducts = [
-    // 1. Vegetables & Fresh Produce
-    {
-      id: 'prod-1',
-      categoryId: 'veg',
-      shopId: 'shop-gupta',
-      shopName: 'Gupta Fresh Mart',
-      name: 'Fresh Red Tomatoes',
-      unit: '500 g',
-      price: 36,
-      mrp: 45,
-      badge: '20% off',
-      badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
-      image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-3',
-      categoryId: 'veg',
-      shopId: 'shop-gupta',
-      shopName: 'Gupta Fresh Mart',
-      name: 'Seasonal Veggie Box',
-      unit: '1 pack',
-      price: 149,
-      mrp: 189,
-      badge: 'Bestseller',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      image: '/images/fresh_basket.jpg',
-    },
+  // Load categories once
+  useEffect(() => {
+    api.getCategories()
+      .then((res) => { if (res.success) setCategories(res.categories); })
+      .catch(() => {})
+      .finally(() => setLoadingCats(false));
+  }, []);
 
-    // 2. Dairy
-    {
-      id: 'prod-2',
-      categoryId: 'dairy',
-      shopId: 'shop-morning',
-      shopName: 'Morning Dairy',
-      name: 'Farm Fresh Milk',
-      unit: '1 L',
-      price: 62,
-      mrp: 66,
-      badge: 'Fresh',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=80',
-    },
+  // Reload shops + products when category changes
+  useEffect(() => {
+    setLoadingShops(true);
+    setLoadingProds(true);
 
-    // 3. Cloth & Fashion
-    {
-      id: 'prod-c1',
-      categoryId: 'cloth',
-      shopId: 'shop-ganesh-cloth',
-      shopName: 'Shree Ganesh Cloth Center',
-      name: 'Pure Cotton Casual Shirt',
-      unit: 'Size M / L / XL',
-      price: 499,
-      mrp: 699,
-      badge: 'Trending',
-      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-      image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-c2',
-      categoryId: 'cloth',
-      shopId: 'shop-ganesh-cloth',
-      shopName: 'Shree Ganesh Cloth Center',
-      name: 'Traditional Paithani Silk Saree',
-      unit: '1 piece with blouse',
-      price: 1250,
-      mrp: 1699,
-      badge: 'Festive',
-      badgeColor: 'bg-pink-50 text-pink-700 border-pink-200',
-      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&auto=format&fit=crop&q=80',
-    },
+    const selectedCat = categories.find((c) => c._id === selectedCategoryId);
+    const catSlug = selectedCat?.slug;
 
-    // 4. Mobile & Accessories
-    {
-      id: 'prod-m1',
-      categoryId: 'mobile',
-      shopId: 'shop-sai-mobile',
-      shopName: 'Sai Mobile Care & Gadgets',
-      name: 'Fast Type-C Fast Charger (33W)',
-      unit: '1 adapter + cable',
-      price: 349,
-      mrp: 599,
-      badge: 'Fast charge',
-      badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-      image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-m2',
-      categoryId: 'mobile',
-      shopId: 'shop-sai-mobile',
-      shopName: 'Sai Mobile Care & Gadgets',
-      name: 'Universal Magnetic Mobile Cover',
-      unit: 'All models available',
-      price: 149,
-      mrp: 299,
-      badge: 'Protection',
-      badgeColor: 'bg-slate-50 text-slate-700 border-slate-200',
-      image: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&auto=format&fit=crop&q=80',
-    },
+    api.getShops(catSlug ? { category: catSlug } : undefined)
+      .then((res) => { if (res.success) setShops(res.shops); })
+      .catch(() => {})
+      .finally(() => setLoadingShops(false));
 
-    // 5. Electric (Wire, Bulb, Lighting)
-    {
-      id: 'prod-e1',
-      categoryId: 'electric',
-      shopId: 'shop-pawan-electric',
-      shopName: 'Pawan Electricals',
-      name: 'Havells 9W LED Cool Bulb',
-      unit: 'Pack of 2 bulbs',
-      price: 160,
-      mrp: 220,
-      badge: '1 yr warranty',
-      badgeColor: 'bg-yellow-50 text-yellow-800 border-yellow-200',
-      image: 'https://images.unsplash.com/photo-1550985543-f47f38aeee65?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-e2',
-      categoryId: 'electric',
-      shopId: 'shop-pawan-electric',
-      shopName: 'Pawan Electricals',
-      name: 'Polycab 1.5 sq mm Copper Wire',
-      unit: '10 meter coil',
-      price: 380,
-      mrp: 460,
-      badge: 'FR Grade',
-      badgeColor: 'bg-red-50 text-red-700 border-red-200',
-      image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-e3',
-      categoryId: 'electric',
-      shopId: 'shop-pawan-electric',
-      shopName: 'Pawan Electricals',
-      name: 'Festive Decorative Fairy Lighting',
-      unit: '15 meter roll (Multi)',
-      price: 120,
-      mrp: 180,
-      badge: 'Festival',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      image: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=400&auto=format&fit=crop&q=80',
-    },
-
-    // 6. Electronic (TV, AC, Fridge)
-    {
-      id: 'prod-el1',
-      categoryId: 'electronic',
-      shopId: 'shop-mahalaxmi-el',
-      shopName: 'Mahalaxmi Electronics',
-      name: 'Samsung 32" HD Smart LED TV',
-      unit: '1 unit • Free install',
-      price: 12490,
-      mrp: 15900,
-      badge: 'Smart TV',
-      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
-      image: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-el2',
-      categoryId: 'electronic',
-      shopId: 'shop-mahalaxmi-el',
-      shopName: 'Mahalaxmi Electronics',
-      name: 'Voltas 1.5 Ton Inverter Split AC',
-      unit: 'Copper condenser',
-      price: 31990,
-      mrp: 38500,
-      badge: '3 Star Rating',
-      badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-      image: 'https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-el3',
-      categoryId: 'electronic',
-      shopId: 'shop-mahalaxmi-el',
-      shopName: 'Mahalaxmi Electronics',
-      name: 'Whirlpool 192L Refrigerator (Fridge)',
-      unit: 'Single door • Direct cool',
-      price: 14990,
-      mrp: 17990,
-      badge: 'Top seller',
-      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      image: 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&auto=format&fit=crop&q=80',
-    },
-
-    // 7. Fireworks & Crackers
-    {
-      id: 'prod-f1',
-      categoryId: 'fireworks',
-      shopId: 'shop-utsav-fireworks',
-      shopName: 'Utsav Fireworks',
-      name: 'Electric Sparklers (Fuljhadi)',
-      unit: 'Pack of 10 boxes',
-      price: 180,
-      mrp: 250,
-      badge: 'Green cracker',
-      badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-      image: 'https://images.unsplash.com/photo-1531747056595-07f6cbbe10ad?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'prod-f2',
-      categoryId: 'fireworks',
-      shopId: 'shop-utsav-fireworks',
-      shopName: 'Utsav Fireworks',
-      name: 'Special Ground Chakri (Spinners)',
-      unit: 'Box of 10 chakris',
-      price: 160,
-      mrp: 220,
-      badge: 'High spin',
-      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      image: 'https://images.unsplash.com/photo-1498931299472-f7a63a5a1cfa?w=400&auto=format&fit=crop&q=80',
-    },
-
-    // 8. Bakery
-    {
-      id: 'prod-4',
-      categoryId: 'bakery',
-      shopId: 'shop-bread',
-      shopName: 'The Bread House',
-      name: 'Artisan Soft Bread',
-      unit: '400 g',
-      price: 75,
-      mrp: 90,
-      badge: 'Baked today',
-      badgeColor: 'bg-amber-50 text-amber-800 border-amber-200',
-      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80',
-    },
-  ];
-
-  // Verified shops from across Karanja market
-  const shops = [
-    {
-      id: 'shop-gupta',
-      categoryId: 'veg',
-      name: 'Gupta Fresh Mart',
-      category: 'Grocery & fresh vegetables',
-      rating: '4.8',
-      time: '18–24 min',
-      distance: '0.8 km',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-morning',
-      categoryId: 'dairy',
-      name: 'Morning Dairy',
-      category: 'Milk, paneer & daily dairy',
-      rating: '4.7',
-      time: '12–18 min',
-      distance: '1.1 km',
-      image: 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-ganesh-cloth',
-      categoryId: 'cloth',
-      name: 'Shree Ganesh Cloth Center',
-      category: 'Shirts, cotton wear & sarees',
-      rating: '4.9',
-      time: '20–30 min',
-      distance: '0.6 km',
-      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-sai-mobile',
-      categoryId: 'mobile',
-      name: 'Sai Mobile Care & Gadgets',
-      category: 'Mobile accessories, chargers & covers',
-      rating: '4.8',
-      time: '15–25 min',
-      distance: '0.9 km',
-      image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-pawan-electric',
-      categoryId: 'electric',
-      name: 'Pawan Electricals',
-      category: 'Wires, LED bulbs & decorative lighting',
-      rating: '4.8',
-      time: '20–25 min',
-      distance: '1.2 km',
-      image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-mahalaxmi-el',
-      categoryId: 'electronic',
-      name: 'Mahalaxmi Electronics',
-      category: 'Smart TV, Inverter AC & Refrigerators',
-      rating: '4.9',
-      time: '30–45 min',
-      distance: '1.5 km',
-      image: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-utsav-fireworks',
-      categoryId: 'fireworks',
-      name: 'Utsav Fireworks & Crackers',
-      category: 'Sparklers, ground chakri & festive fireworks',
-      rating: '4.8',
-      time: '15–20 min',
-      distance: '1.0 km',
-      image: 'https://images.unsplash.com/photo-1498931299472-f7a63a5a1cfa?w=400&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'shop-bread',
-      categoryId: 'bakery',
-      name: 'The Bread House',
-      category: 'Fresh bakery & bread',
-      rating: '4.6',
-      time: '25–30 min',
-      distance: '1.4 km',
-      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80',
-    },
-  ];
-
-  // All 10 Categories with distinct colors, cute icons & tags
-  const categories = [
-    { id: 'all', label: 'All', emoji: '✨', bg: 'bg-[#f0fdf4]' },
-    { id: 'cloth', label: 'Cloth', emoji: '👕', bg: 'bg-[#fdf4ff]' },
-    { id: 'mobile', label: 'Mobile', emoji: '📱', bg: 'bg-[#f0f9ff]' },
-    { id: 'electric', label: 'Electric', emoji: '💡', bg: 'bg-[#fefce8]' },
-    { id: 'electronic', label: 'Electronic', emoji: '📺', bg: 'bg-[#eef2ff]' },
-    { id: 'fireworks', label: 'Fireworks', emoji: '🎆', bg: 'bg-[#fff7ed]' },
-    { id: 'veg', label: 'Vegetables', emoji: '🥬', bg: 'bg-[#ecf7ee]' },
-    { id: 'dairy', label: 'Dairy', emoji: '🥛', bg: 'bg-[#eff6ff]' },
-    { id: 'grocery', label: 'Grocery', emoji: '🛒', bg: 'bg-[#f5f3ff]' },
-    { id: 'bakery', label: 'Bakery', emoji: '🥐', bg: 'bg-[#fffbeb]' },
-  ];
+    api.getProducts(selectedCategoryId ? { categoryId: selectedCategoryId } : undefined)
+      .then((res) => { if (res.success) setProducts(res.products); })
+      .catch(() => {})
+      .finally(() => setLoadingProds(false));
+  }, [selectedCategoryId, categories]);
 
   const getItemQty = (id: string) => {
     const item = cart?.items.find((i) => i.productId === id);
     return item?.qty || 0;
   };
 
+  const getProductBadge = (p: any) => {
+    if (p.mrpPaise && p.pricePaise && p.mrpPaise > p.pricePaise) {
+      const disc = Math.round((1 - p.pricePaise / p.mrpPaise) * 100);
+      return { text: `${disc}% off`, color: 'bg-orange-50 text-orange-700 border-orange-200' };
+    }
+    return { text: 'Available', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+  };
+
+  const getShopImage = (shop: any) => {
+    if (shop.photos?.length) return shop.photos[0];
+    const slug = shop.categorySlug || shop.slug || '';
+    return SHOP_FALLBACK_IMAGES[slug] || SHOP_FALLBACK_IMAGES['grocery'];
+  };
+
+  const selectedCatLabel = selectedCategoryId
+    ? categories.find((c) => c._id === selectedCategoryId)?.name
+    : null;
+
   return (
     <div className="space-y-4 px-4 pt-3 pb-24 font-sans select-none">
       
-      {/* 1. Rounded Pill Search Bar */}
+      {/* 1. Search Bar */}
       <div>
         <button
           onClick={onNavigateSearch}
@@ -365,31 +115,16 @@ export const HomePage: React.FC<HomePageProps> = ({
         </button>
       </div>
 
-      {/* 2. Hero Promo Card (Green banner with basket and orange button) */}
+      {/* 2. Hero Promo Card */}
       <div className="relative bg-[#155a34] rounded-[24px] p-5 text-white overflow-hidden shadow-sm">
-        {/* Subtle decorative curved pattern */}
         <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full border-[20px] border-white/10 pointer-events-none" />
-
-        {/* Circular cropped vegetable basket on right */}
         <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-40 h-40 rounded-full overflow-hidden border-4 border-white/20 shadow-lg pointer-events-none">
-          <img
-            src="/images/fresh_basket.jpg"
-            alt="Fresh produce"
-            className="w-full h-full object-cover"
-          />
+          <img src="/images/fresh_basket.jpg" alt="Fresh produce" className="w-full h-full object-cover" />
         </div>
-
-        {/* Content */}
         <div className="relative z-10 max-w-[210px] space-y-1.5">
-          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200">
-            LOCAL & FRESH
-          </div>
-          <h2 className="text-[20px] font-extrabold tracking-tight leading-snug">
-            Your town’s best, at your doorstep.
-          </h2>
-          <p className="text-[11px] text-white/80 font-normal pb-1">
-            Up to 25% off on your first order
-          </p>
+          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200">LOCAL & FRESH</div>
+          <h2 className="text-[20px] font-extrabold tracking-tight leading-snug">Your town's best, at your doorstep.</h2>
+          <p className="text-[11px] text-white/80 font-normal pb-1">Up to 25% off on your first order</p>
           <button
             onClick={onNavigateShops}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#f97316] hover:bg-[#ea580c] active:scale-95 text-white font-bold text-xs rounded-full shadow-sm transition cursor-pointer"
@@ -400,20 +135,20 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-      {/* 3. Shop by category (Scrollable Pill Slider) */}
+      {/* 3. Shop by category */}
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-1.5">
             <h3 className="text-sm font-bold text-[#111827]">Shop by category</h3>
-            {selectedCategory && selectedCategory !== 'all' && (
+            {selectedCatLabel && (
               <span className="text-[10px] font-bold text-[#1b5e39] bg-[#e8f3ea] px-2 py-0.5 rounded-full capitalize">
-                {categories.find((c) => c.id === selectedCategory)?.label}
+                {selectedCatLabel}
               </span>
             )}
           </div>
-          {selectedCategory && selectedCategory !== 'all' ? (
+          {selectedCategoryId ? (
             <button
-              onClick={() => setSelectedCategory('all')}
+              onClick={() => setSelectedCategoryId(null)}
               className="text-xs font-bold text-[#1b5e39] hover:underline cursor-pointer"
             >
               Reset filter
@@ -429,39 +164,51 @@ export const HomePage: React.FC<HomePageProps> = ({
           )}
         </div>
 
-        {/* Horizontal Category Scroll Slider */}
         <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 pt-1">
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat.id || (!selectedCategory && cat.id === 'all');
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id === 'all' ? null : cat.id)}
-                className="flex flex-col items-center gap-1.5 transition hover:scale-105 active:scale-95 cursor-pointer flex-shrink-0 w-16"
-              >
-                <div
-                  className={`w-14 h-14 rounded-2xl ${cat.bg} border-2 ${
-                    isSelected
-                      ? 'border-[#1b5e39] shadow-sm ring-2 ring-[#1b5e39]/25 scale-105'
-                      : 'border-slate-100 hover:border-slate-200'
-                  } flex items-center justify-center text-2xl shadow-xs transition`}
+          {/* All pill */}
+          <button
+            onClick={() => setSelectedCategoryId(null)}
+            className="flex flex-col items-center gap-1.5 transition hover:scale-105 active:scale-95 cursor-pointer flex-shrink-0 w-16"
+          >
+            <div className={`w-14 h-14 rounded-2xl bg-[#f0fdf4] border-2 ${!selectedCategoryId ? 'border-[#1b5e39] shadow-sm ring-2 ring-[#1b5e39]/25 scale-105' : 'border-slate-100 hover:border-slate-200'} flex items-center justify-center text-2xl shadow-xs transition`}>
+              ✨
+            </div>
+            <span className={`text-[10px] font-semibold text-center leading-tight truncate max-w-full ${!selectedCategoryId ? 'text-[#1b5e39] font-bold' : 'text-slate-600'}`}>
+              All
+            </span>
+          </button>
+
+          {loadingCats ? (
+            [1,2,3,4,5].map(i => (
+              <div key={i} className="flex-shrink-0 w-16 animate-pulse">
+                <div className="w-14 h-14 rounded-2xl bg-slate-200" />
+                <div className="h-2.5 bg-slate-200 rounded mt-2 mx-auto w-10" />
+              </div>
+            ))
+          ) : (
+            categories.map((cat) => {
+              const meta = CATEGORY_META[cat.slug] || { emoji: '🏪', bg: 'bg-slate-50' };
+              const isSelected = selectedCategoryId === cat._id;
+              return (
+                <button
+                  key={cat._id}
+                  onClick={() => setSelectedCategoryId(isSelected ? null : cat._id)}
+                  className="flex flex-col items-center gap-1.5 transition hover:scale-105 active:scale-95 cursor-pointer flex-shrink-0 w-16"
                 >
-                  {cat.emoji}
-                </div>
-                <span
-                  className={`text-[10px] font-semibold text-center leading-tight truncate max-w-full ${
-                    isSelected ? 'text-[#1b5e39] font-bold' : 'text-slate-600'
-                  }`}
-                >
-                  {cat.label}
-                </span>
-              </button>
-            );
-          })}
+                  <div className={`w-14 h-14 rounded-2xl ${meta.bg} border-2 ${isSelected ? 'border-[#1b5e39] shadow-sm ring-2 ring-[#1b5e39]/25 scale-105' : 'border-slate-100 hover:border-slate-200'} flex items-center justify-center text-2xl shadow-xs transition`}>
+                    {meta.emoji}
+                  </div>
+                  <span className={`text-[10px] font-semibold text-center leading-tight truncate max-w-full ${isSelected ? 'text-[#1b5e39] font-bold' : 'text-slate-600'}`}>
+                    {cat.name}
+                  </span>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* 4. Feature Badges Strip (Fast delivery, Local stores, Quality checked) */}
+      {/* 4. Feature Badges Strip */}
       <div className="bg-[#fffbf5] border border-[#fef3c7] rounded-[18px] py-2.5 px-3 flex items-center justify-around text-[11px] font-semibold text-[#78350f]">
         <div className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 text-[#b45309]" />
@@ -483,9 +230,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <h3 className="text-sm font-bold text-[#111827]">
-            {selectedCategory && selectedCategory !== 'all'
-              ? `${categories.find((c) => c.id === selectedCategory)?.label} Stores`
-              : 'Shops near you'}
+            {selectedCatLabel ? `${selectedCatLabel} Stores` : 'Shops near you'}
           </h3>
           <button
             onClick={onNavigateShops}
@@ -497,154 +242,147 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         <div className="space-y-2.5">
-          {(selectedCategory && selectedCategory !== 'all'
-            ? shops.filter((s) => s.categoryId === selectedCategory)
-            : shops
-          ).slice(0, 4).map((shop) => (
-            <div
-              key={shop.id}
-              onClick={() => onSelectShop(shop.id)}
-              className="bg-white rounded-[20px] p-3 border border-slate-200/80 shadow-xs hover:border-[#1b5e39] transition cursor-pointer flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                  <img
-                    src={shop.image}
-                    alt={shop.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-[#111827]">{shop.name}</h4>
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-[#e8f3ea] text-[#1b5e39] px-1.5 py-0.5 rounded-md">
-                      <Star className="w-2.5 h-2.5 fill-current" />
-                      {shop.rating}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#6b7280] mt-0.5">{shop.category}</p>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{shop.time}</span>
-                    <span>•</span>
-                    <span>{shop.distance}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="w-7 h-7 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 flex-shrink-0">
-                <ChevronRight className="w-4 h-4" />
-              </div>
+          {loadingShops ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-slate-200 rounded-[20px] animate-pulse" />
+            ))
+          ) : shops.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 bg-white rounded-[20px] border border-slate-200">
+              No shops found in this category yet.
             </div>
-          ))}
+          ) : (
+            shops.slice(0, 4).map((shop) => (
+              <div
+                key={shop._id}
+                onClick={() => onSelectShop(shop._id)}
+                className="bg-white rounded-[20px] p-3 border border-slate-200/80 shadow-xs hover:border-[#1b5e39] transition cursor-pointer flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                    <img
+                      src={getShopImage(shop)}
+                      alt={shop.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-[#111827]">{shop.name}</h4>
+                      {shop.rating && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-[#e8f3ea] text-[#1b5e39] px-1.5 py-0.5 rounded-md">
+                          <Star className="w-2.5 h-2.5 fill-current" />
+                          {shop.rating}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[#6b7280] mt-0.5">{shop.category || shop.address}</p>
+                    {shop.hours && (
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{shop.hours.open} – {shop.hours.close}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="w-7 h-7 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 flex-shrink-0">
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* 6. Popular around you (2-column product grid) */}
+      {/* 6. Popular products */}
       <div>
         <h3 className="text-sm font-bold text-[#111827] mb-2.5">
-          {selectedCategory && selectedCategory !== 'all'
-            ? `${categories.find((c) => c.id === selectedCategory)?.label} Items`
-            : 'Popular around you'}
+          {selectedCatLabel ? `${selectedCatLabel} Items` : 'Popular around you'}
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          {(selectedCategory && selectedCategory !== 'all'
-            ? popularProducts.filter((p) => p.categoryId === selectedCategory)
-            : popularProducts
-          ).map((p) => {
-            const qty = getItemQty(p.id);
-            return (
-              <div
-                key={p.id}
-                className="bg-white rounded-[20px] p-3 border border-slate-200/80 shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  {/* Image with Tag badge */}
-                  <div className="relative h-28 rounded-xl bg-slate-50 mb-2 overflow-hidden flex items-center justify-center border border-slate-100">
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <span
-                      className={`absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${p.badgeColor}`}
-                    >
-                      {p.badge}
-                    </span>
+          {loadingProds ? (
+            [1, 2, 3, 4].map(i => (
+              <div key={i} className="h-56 bg-slate-200 rounded-[20px] animate-pulse" />
+            ))
+          ) : products.length === 0 ? (
+            <div className="col-span-2 p-8 text-center text-xs text-slate-400 bg-white rounded-[20px] border border-slate-200">
+              No products found in this category yet.
+            </div>
+          ) : (
+            products.slice(0, 12).map((p) => {
+              const qty = getItemQty(p._id);
+              const badge = getProductBadge(p);
+              const imgSrc = p.imageKeys?.[0] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80';
+              const shopForCard = shops.find((s) => s._id === p.shopId);
+              return (
+                <div
+                  key={p._id}
+                  className="bg-white rounded-[20px] p-3 border border-slate-200/80 shadow-xs flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative h-28 rounded-xl bg-slate-50 mb-2 overflow-hidden flex items-center justify-center border border-slate-100">
+                      <img src={imgSrc} alt={p.name} className="w-full h-full object-cover" />
+                      <span className={`absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${badge.color}`}>
+                        {badge.text}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">{p.unit}</div>
+                    <h4 className="text-xs font-bold text-[#111827] line-clamp-1 leading-tight mt-0.5">{p.name}</h4>
                   </div>
 
-                  <div className="text-[10px] text-slate-400 font-medium">{p.unit}</div>
-                  <h4 className="text-xs font-bold text-[#111827] line-clamp-1 leading-tight mt-0.5">
-                    {p.name}
-                  </h4>
-                </div>
+                  <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div>
+                      <span className="text-xs font-extrabold text-[#111827]">₹{Math.round(p.pricePaise / 100)}</span>
+                      {p.mrpPaise && p.mrpPaise > p.pricePaise && (
+                        <span className="text-[10px] text-slate-400 line-through ml-1">
+                          ₹{Math.round(p.mrpPaise / 100)}
+                        </span>
+                      )}
+                    </div>
 
-                {/* Price and Stepper/Add Button */}
-                <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
-                  <div>
-                    <span className="text-xs font-extrabold text-[#111827]">₹{p.price}</span>
-                    {p.mrp && p.mrp > p.price && (
-                      <span className="text-[10px] text-slate-400 line-through ml-1">
-                        ₹{p.mrp}
-                      </span>
+                    {qty === 0 ? (
+                      <button
+                        onClick={() => {
+                          updateQuantity(p._id, 1, {
+                            name: p.name,
+                            unit: p.unit,
+                            pricePaise: p.pricePaise,
+                            shopId: p.shopId,
+                            shopName: shopForCard?.name || p.shopName || 'Local Shop',
+                            image: imgSrc,
+                          });
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl border-2 border-[#1b5e39] text-[#1b5e39] hover:bg-[#1b5e39] hover:text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                      >
+                        ADD
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-[#1b5e39] text-white rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-xs">
+                        <button
+                          onClick={() => updateQuantity(p._id, qty - 1, {
+                            name: p.name, unit: p.unit, pricePaise: p.pricePaise,
+                            shopId: p.shopId, shopName: shopForCard?.name || p.shopName || 'Local Shop', image: imgSrc,
+                          })}
+                          className="hover:opacity-80 cursor-pointer"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="min-w-[14px] text-center font-bold">{qty}</span>
+                        <button
+                          onClick={() => updateQuantity(p._id, qty + 1, {
+                            name: p.name, unit: p.unit, pricePaise: p.pricePaise,
+                            shopId: p.shopId, shopName: shopForCard?.name || p.shopName || 'Local Shop', image: imgSrc,
+                          })}
+                          className="hover:opacity-80 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
-
-                  {qty === 0 ? (
-                    <button
-                      onClick={() => {
-                        updateQuantity(p.id, 1, {
-                          name: p.name,
-                          unit: p.unit,
-                          pricePaise: p.price * 100,
-                          shopId: p.shopId,
-                          shopName: shops.find((s) => s.id === p.shopId)?.name || 'Gupta Fresh Mart',
-                          image: p.image,
-                        });
-                      }}
-                      className="px-3.5 py-1.5 rounded-xl border-2 border-[#1b5e39] text-[#1b5e39] hover:bg-[#1b5e39] hover:text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
-                    >
-                      ADD
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2 bg-[#1b5e39] text-white rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-xs">
-                      <button
-                        onClick={() =>
-                          updateQuantity(p.id, qty - 1, {
-                            name: p.name,
-                            unit: p.unit,
-                            pricePaise: p.price * 100,
-                            shopId: p.shopId,
-                            shopName: shops.find((s) => s.id === p.shopId)?.name || 'Gupta Fresh Mart',
-                            image: p.image,
-                          })
-                        }
-                        className="hover:opacity-80 cursor-pointer"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="min-w-[14px] text-center font-bold">{qty}</span>
-                      <button
-                        onClick={() =>
-                          updateQuantity(p.id, qty + 1, {
-                            name: p.name,
-                            unit: p.unit,
-                            pricePaise: p.price * 100,
-                            shopId: p.shopId,
-                            shopName: shops.find((s) => s.id === p.shopId)?.name || 'Gupta Fresh Mart',
-                            image: p.image,
-                          })
-                        }
-                        className="hover:opacity-80 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
