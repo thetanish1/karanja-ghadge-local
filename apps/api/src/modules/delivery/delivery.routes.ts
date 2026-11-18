@@ -3,6 +3,7 @@ import { z } from 'zod';
 import mongoose from 'mongoose';
 import {
   OrderModel,
+  OrderItemModel,
   OrderEventModel,
   DeliveryModel,
   UserModel,
@@ -41,9 +42,13 @@ router.get('/tasks', authenticate, requireRoles('delivery_partner', 'admin'), as
       .populate('shopId', 'name phone address geo')
       .populate('customerId', 'name phone');
 
+    const orderIds = orders.map((o) => o._id);
+    const allItems = await OrderItemModel.find({ orderId: { $in: orderIds } });
+
     const tasks = orders.map((o) => {
       const shop = o.shopId as any;
       const customer = o.customerId as any;
+      const orderItems = allItems.filter((it) => it.orderId.toString() === o._id.toString());
 
       // Build Google Maps Navigation links
       const shopCoords = shop?.geo?.coordinates; // [lng, lat]
@@ -74,6 +79,14 @@ router.get('/tasks', authenticate, requireRoles('delivery_partner', 'admin'), as
         paymentMethod: o.paymentMethod,
         paymentStatus: o.paymentStatus,
         createdAt: o.createdAt,
+        items: orderItems.map((it) => ({
+          _id: it._id.toString(),
+          name: it.name,
+          unit: it.unit,
+          qty: it.qty,
+          pricePaise: it.pricePaise,
+          subtotalPaise: it.subtotalPaise,
+        })),
       };
     });
 
