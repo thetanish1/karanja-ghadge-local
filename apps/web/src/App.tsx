@@ -44,8 +44,8 @@ const MainApp: React.FC = () => {
   // App splash screen from Figma design
   const [showSplash, setShowSplash] = useState<boolean>(true);
 
-  // Show the exact Figma design screen by default
-  const [showFigmaLanding, setShowFigmaLanding] = useState<boolean>(true);
+  // Show Figma Landing initially or on explicit logout
+  const [showFigmaLanding, setShowFigmaLanding] = useState<boolean>(() => !localStorage.getItem('kgl_access_token'));
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [selectedAddress, setSelectedAddress] = useState<string>('Home • Sector 14');
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -53,13 +53,6 @@ const MainApp: React.FC = () => {
   const [activeOrderId, setActiveOrderId] = useState<string | null>('#AC2409');
   const [legalPage, setLegalPage] = useState<string>('terms');
   const [authModalOpen, setAuthModalOpen] = useState(false);
-
-  // When unauthenticated, always show Figma Landing Screen
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setShowFigmaLanding(true);
-    }
-  }, [isAuthenticated]);
 
   // Switch initial tab when role perspective switches
   useEffect(() => {

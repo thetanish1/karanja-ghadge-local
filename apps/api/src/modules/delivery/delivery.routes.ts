@@ -29,7 +29,11 @@ router.get('/tasks', authenticate, requireRoles('delivery_partner', 'admin'), as
     };
 
     if (isDeliveryOnly) {
-      query.deliveryPartnerId = new mongoose.Types.ObjectId(req.user!.id);
+      query.$or = [
+        { deliveryPartnerId: new mongoose.Types.ObjectId(req.user!.id) },
+        { deliveryPartnerId: { $exists: false } },
+        { deliveryPartnerId: null },
+      ];
     }
 
     const orders = await OrderModel.find(query)
@@ -112,6 +116,9 @@ router.post('/tasks/:orderId/transition', authenticate, requireRoles('delivery_p
 
     const previousState = order.status;
     order.status = targetState;
+    if (!order.deliveryPartnerId && req.user) {
+      order.deliveryPartnerId = new mongoose.Types.ObjectId(req.user.id);
+    }
     if (targetState === 'delivery_failed') {
       order.deliveryFailedReason = reason || 'Delivery failed';
     }

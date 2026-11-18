@@ -183,6 +183,57 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction):
   }
 });
 
+// Quick login by role (Public / Convenience for customer, shopkeeper, delivery partner, admin)
+router.post('/role-login', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { role } = req.body;
+    const targetRole = ['customer', 'shopkeeper', 'delivery_partner', 'admin'].includes(role) ? role : 'customer';
+    const roleProfiles: Record<string, { phone: string; name: string }> = {
+      customer: { phone: '9876543210', name: 'Akash Kumar' },
+      shopkeeper: { phone: '9876543211', name: 'Gupta Fresh Mart (Merchant)' },
+      delivery_partner: { phone: '9876543212', name: 'Ravi Singh (Delivery Partner)' },
+      admin: { phone: '9876543213', name: 'Platform Admin' },
+    };
+
+    const target = roleProfiles[targetRole];
+    let user = await UserModel.findOne({ phone: target.phone });
+    if (!user) {
+      user = new UserModel({
+        phone: target.phone,
+        name: target.name,
+        roles: [targetRole, 'customer'],
+        status: 'active',
+      });
+    } else {
+      if (!user.roles.includes(targetRole as any)) {
+        user.roles.push(targetRole as any);
+      }
+      if (!user.name) {
+        user.name = target.name;
+      }
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user);
+    user.refreshTokenHash = refreshToken;
+    await user.save();
+
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id.toString(),
+        phone: user.phone,
+        name: user.name,
+        roles: user.roles,
+        status: user.status,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Logout
 router.post('/logout', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {

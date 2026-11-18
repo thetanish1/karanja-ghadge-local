@@ -75,6 +75,12 @@ export const api = {
       body: JSON.stringify({ phone, otp, name }),
     }),
 
+  loginAsRole: (role: string) =>
+    request<{ success: boolean; accessToken: string; refreshToken: string; user: any }>('/auth/role-login', {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    }),
+
   getMe: () => request<{ success: boolean; user: any }>('/auth/me'),
 
   logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),

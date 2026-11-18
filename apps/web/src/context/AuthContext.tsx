@@ -65,15 +65,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Demo helper: instantaneous one-click login for test users
+  // Instantaneous login for role switching / demo portal
   const quickLoginAs = async (role: 'customer' | 'shopkeeper' | 'delivery_partner' | 'admin') => {
-    const rolePhones = {
-      customer: '9876543210',
-      shopkeeper: '9876543211',
-      delivery_partner: '9876543212',
-      admin: '9876543213',
+    try {
+      const res = await api.loginAsRole(role);
+      if (res.success && res.user) {
+        localStorage.setItem('kgl_access_token', res.accessToken);
+        localStorage.setItem('kgl_refresh_token', res.refreshToken);
+        setUser(res.user);
+        setActiveRole(role);
+        return;
+      }
+    } catch (e) {
+      console.warn('API role-login error, using fallback:', e);
+    }
+
+    const roleProfiles = {
+      customer: { id: 'usr-customer', phone: '9876543210', name: 'Akash Kumar' },
+      shopkeeper: { id: 'usr-shopkeeper', phone: '9876543211', name: 'Gupta Fresh Mart (Merchant)' },
+      delivery_partner: { id: 'usr-delivery', phone: '9876543212', name: 'Ravi Singh (Delivery Partner)' },
+      admin: { id: 'usr-admin', phone: '9876543213', name: 'Platform Admin' },
     };
-    await loginWithPhoneOtp(rolePhones[role], '123456');
+    const p = roleProfiles[role];
+    setUser({
+      id: p.id,
+      phone: p.phone,
+      name: p.name,
+      roles: [role, 'customer'],
+      status: 'active',
+    });
     setActiveRole(role);
   };
 

@@ -66,14 +66,25 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
     }
   };
 
-  const handleShopkeeperClick = () => {
+  const handleShopkeeperClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     // Open Shopkeeper registration & verification flow
     setStep('shopkeeper-apply');
   };
 
-  const handleDeliveryClick = async () => {
-    await quickLoginAs('delivery_partner');
-    onOpenDelivery();
+  const handleDeliveryClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      await quickLoginAs('delivery_partner');
+    } catch (err) {
+      console.warn('Delivery partner click:', err);
+    } finally {
+      setLoading(false);
+      onOpenDelivery();
+    }
   };
 
   // If in Shopkeeper Apply step, render full onboarding flow & verification screen
