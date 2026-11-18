@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { api } from '../services/api.js';
-import { Store } from 'lucide-react';
+import { Store, Truck } from 'lucide-react';
 import { OtpVerificationScreen } from './OtpVerificationScreen.js';
 import { ShopkeeperApplyFlow } from '../pages/shop/ShopkeeperApplyFlow.js';
 
@@ -9,11 +9,13 @@ interface FigmaScreenProps {
   onEnterApp: () => void;
   onOpenShopkeeper: () => void;
   onOpenAdmin: () => void;
+  onOpenDelivery: () => void;
 }
 
 export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
   onEnterApp,
   onOpenShopkeeper,
+  onOpenDelivery,
 }) => {
   const { loginWithPhoneOtp, quickLoginAs } = useAuth();
   const [step, setStep] = useState<'phone' | 'otp' | 'shopkeeper-apply'>('phone');
@@ -67,6 +69,11 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
   const handleShopkeeperClick = () => {
     // Open Shopkeeper registration & verification flow
     setStep('shopkeeper-apply');
+  };
+
+  const handleDeliveryClick = async () => {
+    await quickLoginAs('delivery_partner');
+    onOpenDelivery();
   };
 
   // If in Shopkeeper Apply step, render full onboarding flow & verification screen
@@ -200,15 +207,24 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
                 <span className="text-lg font-bold">→</span>
               </button>
 
-              {/* Secondary Action: I'm a shopkeeper */}
-              <div className="pt-1 text-center">
+              {/* Secondary Actions: Shopkeeper & Delivery Partner */}
+              <div className="pt-1 flex items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={handleShopkeeperClick}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#e8f3ea]/60 hover:bg-[#e8f3ea] text-xs font-bold text-[#1b5e39] transition cursor-pointer border border-[#cde5d2]"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#e8f3ea]/60 hover:bg-[#e8f3ea] text-xs font-bold text-[#1b5e39] transition cursor-pointer border border-[#cde5d2]"
                 >
-                  <Store className="w-4 h-4 text-[#1b5e39]" />
+                  <Store className="w-3.5 h-3.5 text-[#1b5e39]" />
                   <span>I'm a shopkeeper</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeliveryClick}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50/70 hover:bg-blue-100 text-xs font-bold text-blue-700 transition cursor-pointer border border-blue-200"
+                >
+                  <Truck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Delivery partner</span>
                 </button>
               </div>
 

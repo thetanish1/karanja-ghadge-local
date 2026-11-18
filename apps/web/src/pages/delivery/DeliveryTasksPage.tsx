@@ -12,9 +12,14 @@ import {
   Banknote,
   AlertCircle,
   RefreshCw,
+  ArrowLeft,
 } from 'lucide-react';
 
-export const DeliveryTasksPage: React.FC = () => {
+interface DeliveryTasksPageProps {
+  onBackToCustomer?: () => void;
+}
+
+export const DeliveryTasksPage: React.FC<DeliveryTasksPageProps> = ({ onBackToCustomer }) => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [otpModal, setOtpModal] = useState<{ isOpen: boolean; orderId?: string }>({ isOpen: false });
@@ -82,6 +87,14 @@ export const DeliveryTasksPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-200">
         <div className="flex items-center gap-2">
+          {onBackToCustomer && (
+            <button
+              onClick={onBackToCustomer}
+              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 transition mr-1 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <Truck className="w-4 h-4 text-emerald-600" />
           <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Active Deliveries</h2>
         </div>

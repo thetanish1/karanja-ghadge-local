@@ -109,6 +109,10 @@ const MainApp: React.FC = () => {
           setShowFigmaLanding(false);
           setCurrentTab('shop-queue');
         }}
+        onOpenDelivery={() => {
+          setShowFigmaLanding(false);
+          setCurrentTab('delivery-tasks');
+        }}
         onOpenAdmin={() => {
           setShowFigmaLanding(false);
           setCurrentTab('admin-overview');
@@ -203,6 +207,7 @@ const MainApp: React.FC = () => {
             onOpenAuth={() => setAuthModalOpen(true)}
             onOpenOrder={handleSelectOrder}
             onOpenShopkeeper={() => setCurrentTab('shop-queue')}
+            onOpenDelivery={() => setCurrentTab('delivery-tasks')}
           />
         );
 
@@ -222,7 +227,7 @@ const MainApp: React.FC = () => {
 
       // Delivery Views
       case 'delivery-tasks':
-        return <DeliveryTasksPage />;
+        return <DeliveryTasksPage onBackToCustomer={() => setCurrentTab('home')} />;
 
       // Admin Views
       case 'admin-overview':
