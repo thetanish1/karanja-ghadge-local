@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext.js';
 import { api } from '../../services/api.js';
 import { StatusBadge } from '../../components/StatusBadge.js';
 import { formatPaiseToRupees } from '@karanjaghadge/shared';
-import { Edit2, ChevronRight, MapPin, CreditCard, Bell, Store, ArrowRight, LogOut, Clock, ShoppingBag, Truck } from 'lucide-react';
+import { Edit2, ChevronRight, MapPin, CreditCard, Bell, Store, ArrowRight, LogOut, Clock, ShoppingBag, Truck, ShieldCheck } from 'lucide-react';
 
 interface AccountPageProps {
   onOpenLegal: (page: string) => void;
@@ -12,6 +12,7 @@ interface AccountPageProps {
   onOpenOrder: (orderId: string) => void;
   onOpenShopkeeper: () => void;
   onOpenDelivery?: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const AccountPage: React.FC<AccountPageProps> = ({
@@ -21,6 +22,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   onOpenOrder,
   onOpenShopkeeper,
   onOpenDelivery,
+  onOpenAdmin,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
@@ -229,6 +231,25 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               <div>
                 <div className="text-xs font-bold text-white">Delivery Partner Portal</div>
                 <div className="text-[11px] text-white/80">Pickup from shop, maps route & OTP handover</div>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-white" />
+          </div>
+        )}
+
+        {/* 7. Platform Admin Console Banner */}
+        {onOpenAdmin && (
+          <div
+            onClick={onOpenAdmin}
+            className="bg-[#4c1d95] rounded-[22px] p-4 text-white flex items-center justify-between shadow-xs hover:bg-[#3b0764] transition cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white">Platform Admin Console</div>
+                <div className="text-[11px] text-white/80">Monitor Karanja orders, verify shops & audit trail</div>
               </div>
             </div>
             <ArrowRight className="w-4 h-4 text-white" />

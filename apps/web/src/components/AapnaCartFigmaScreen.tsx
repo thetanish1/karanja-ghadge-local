@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { api } from '../services/api.js';
-import { Store, Truck } from 'lucide-react';
+import { Store, Truck, ShieldCheck } from 'lucide-react';
 import { OtpVerificationScreen } from './OtpVerificationScreen.js';
 import { ShopkeeperApplyFlow } from '../pages/shop/ShopkeeperApplyFlow.js';
 
@@ -15,6 +15,7 @@ interface FigmaScreenProps {
 export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
   onEnterApp,
   onOpenShopkeeper,
+  onOpenAdmin,
   onOpenDelivery,
 }) => {
   const { loginWithPhoneOtp, quickLoginAs } = useAuth();
@@ -84,6 +85,20 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
     } finally {
       setLoading(false);
       onOpenDelivery();
+    }
+  };
+
+  const handleAdminClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      await quickLoginAs('admin');
+    } catch (err) {
+      console.warn('Admin click:', err);
+    } finally {
+      setLoading(false);
+      onOpenAdmin();
     }
   };
 
@@ -218,24 +233,33 @@ export const AapnaCartFigmaScreen: React.FC<FigmaScreenProps> = ({
                 <span className="text-lg font-bold">→</span>
               </button>
 
-              {/* Secondary Actions: Shopkeeper & Delivery Partner */}
-              <div className="pt-1 flex items-center justify-center gap-2">
+              {/* Secondary Actions: Shopkeeper, Delivery Partner, Admin */}
+              <div className="pt-1.5 flex items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={handleShopkeeperClick}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#e8f3ea]/60 hover:bg-[#e8f3ea] text-xs font-bold text-[#1b5e39] transition cursor-pointer border border-[#cde5d2]"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#e8f3ea]/70 hover:bg-[#e8f3ea] text-[11px] font-bold text-[#1b5e39] transition cursor-pointer border border-[#cde5d2]"
                 >
                   <Store className="w-3.5 h-3.5 text-[#1b5e39]" />
-                  <span>I'm a shopkeeper</span>
+                  <span>Shopkeeper</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleDeliveryClick}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50/70 hover:bg-blue-100 text-xs font-bold text-blue-700 transition cursor-pointer border border-blue-200"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50/70 hover:bg-blue-100 text-[11px] font-bold text-blue-700 transition cursor-pointer border border-blue-200"
                 >
                   <Truck className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Delivery partner</span>
+                  <span>Delivery</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAdminClick}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-purple-50/70 hover:bg-purple-100 text-[11px] font-bold text-purple-700 transition cursor-pointer border border-purple-200"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Admin</span>
                 </button>
               </div>
 

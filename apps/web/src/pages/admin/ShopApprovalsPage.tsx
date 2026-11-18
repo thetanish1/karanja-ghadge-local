@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api.js';
 import { StatusBadge } from '../../components/StatusBadge.js';
-import { Store, CheckCircle, XCircle, Phone, MapPin, AlertCircle, RefreshCw } from 'lucide-react';
+import { Store, CheckCircle, XCircle, Phone, MapPin, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 
-export const ShopApprovalsPage: React.FC = () => {
+interface ShopApprovalsPageProps {
+  onBack?: () => void;
+}
+
+export const ShopApprovalsPage: React.FC<ShopApprovalsPageProps> = ({ onBack }) => {
   const [shops, setShops] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -46,6 +50,15 @@ export const ShopApprovalsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-200">
         <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition"
+              title="Back to Overview"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <Store className="w-4 h-4 text-emerald-600" />
           <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Shop Verifications</h2>
         </div>

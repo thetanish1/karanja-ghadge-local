@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api.js';
 import { formatPaiseToRupees } from '@karanjaghadge/shared';
 import { StatusBadge } from '../../components/StatusBadge.js';
-import { ShoppingBag, Truck, UserPlus, Download, RefreshCw, X, Check } from 'lucide-react';
+import { ShoppingBag, Truck, UserPlus, Download, RefreshCw, X, Check, ArrowLeft } from 'lucide-react';
 
-export const AdminOrdersPage: React.FC = () => {
+interface AdminOrdersPageProps {
+  onBack?: () => void;
+}
+
+export const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack }) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +67,15 @@ export const AdminOrdersPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-200">
         <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition"
+              title="Back to Overview"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <ShoppingBag className="w-4 h-4 text-emerald-600" />
           <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">All Platform Orders</h2>
         </div>

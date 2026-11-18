@@ -39,7 +39,7 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage.js';
 import { PolicyPages } from './pages/legal/PolicyPages.js';
 
 const MainApp: React.FC = () => {
-  const { activeRole, isAuthenticated } = useAuth();
+  const { activeRole, isAuthenticated, quickLoginAs } = useAuth();
   
   // App splash screen from Figma design
   const [showSplash, setShowSplash] = useState<boolean>(true);
@@ -199,8 +199,18 @@ const MainApp: React.FC = () => {
             onApplyShop={() => setCurrentTab('shop-apply')}
             onOpenAuth={() => setAuthModalOpen(true)}
             onOpenOrder={handleSelectOrder}
-            onOpenShopkeeper={() => setCurrentTab('shop-queue')}
-            onOpenDelivery={() => setCurrentTab('delivery-tasks')}
+            onOpenShopkeeper={async () => {
+              await quickLoginAs('shopkeeper');
+              setCurrentTab('shop-queue');
+            }}
+            onOpenDelivery={async () => {
+              await quickLoginAs('delivery_partner');
+              setCurrentTab('delivery-tasks');
+            }}
+            onOpenAdmin={async () => {
+              await quickLoginAs('admin');
+              setCurrentTab('admin-overview');
+            }}
           />
         );
 
@@ -209,7 +219,14 @@ const MainApp: React.FC = () => {
       case 'shop-products':
       case 'shop-store':
       case 'shopkeeper-portal':
-        return <ShopkeeperPortal onBackToCustomer={() => setCurrentTab('home')} />;
+        return (
+          <ShopkeeperPortal
+            onBackToCustomer={() => {
+              quickLoginAs('customer');
+              setCurrentTab('home');
+            }}
+          />
+        );
       case 'shop-apply':
         return (
           <ShopkeeperApplyFlow
@@ -220,17 +237,32 @@ const MainApp: React.FC = () => {
 
       // Delivery Views
       case 'delivery-tasks':
-        return <DeliveryTasksPage onBackToCustomer={() => setCurrentTab('home')} />;
+        return (
+          <DeliveryTasksPage
+            onBackToCustomer={() => {
+              quickLoginAs('customer');
+              setCurrentTab('home');
+            }}
+          />
+        );
 
       // Admin Views
       case 'admin-overview':
-        return <AdminOverviewPage onNavigateTab={(tab) => setCurrentTab(tab)} />;
+        return (
+          <AdminOverviewPage
+            onNavigateTab={(tab) => setCurrentTab(tab)}
+            onBackToCustomer={() => {
+              quickLoginAs('customer');
+              setCurrentTab('home');
+            }}
+          />
+        );
       case 'admin-shops':
-        return <ShopApprovalsPage />;
+        return <ShopApprovalsPage onBack={() => setCurrentTab('admin-overview')} />;
       case 'admin-orders':
-        return <AdminOrdersPage />;
+        return <AdminOrdersPage onBack={() => setCurrentTab('admin-overview')} />;
       case 'admin-settings':
-        return <AdminSettingsPage />;
+        return <AdminSettingsPage onBack={() => setCurrentTab('admin-overview')} />;
 
       // Legal & Help Views
       case 'legal':
@@ -260,8 +292,8 @@ const MainApp: React.FC = () => {
         {/* PWA Mobile Install Banner for Android & iOS */}
         <InstallPwaBanner />
 
-        {/* Top Mobile Navbar (Hidden on store detail, cart, tracking, and shopkeeper portal) */}
-        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && (
+        {/* Top Mobile Navbar (Hidden on store detail, cart, tracking, and role portals) */}
+        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
           <Navbar
             onOpenLocation={() => setShowLocationModal(true)}
             onOpenAccount={() => setCurrentTab('account')}
@@ -274,16 +306,16 @@ const MainApp: React.FC = () => {
           {renderContent()}
         </main>
 
-        {/* Floating Cart Bar (appears when items in cart, hidden on cart, tracking, and shopkeeper) */}
-        {currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && (
+        {/* Floating Cart Bar (appears when items in cart, hidden on cart, tracking, and role portals) */}
+        {currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
           <FloatingCartBar
             onOpenCart={() => setCurrentTab('cart')}
             isShopDetail={currentTab === 'shop-detail'}
           />
         )}
 
-        {/* Bottom Navigation (matching Figma 4 tabs, hidden in shopkeeper) */}
-        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'shop-detail' && !currentTab.startsWith('shop') && (
+        {/* Bottom Navigation (matching Figma 4 tabs, hidden on role portals) */}
+        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'shop-detail' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
           <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
         )}
 

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api.js';
 import { formatPaiseToRupees, parseRupeesToPaise } from '@karanjaghadge/shared';
-import { Settings, Shield, History, Save, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Settings, Shield, History, Save, AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
 
-export const AdminSettingsPage: React.FC = () => {
+interface AdminSettingsPageProps {
+  onBack?: () => void;
+}
+
+export const AdminSettingsPage: React.FC<AdminSettingsPageProps> = ({ onBack }) => {
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [logs, setLogs] = useState<any[]>([]);
   const [deliveryFeeRupees, setDeliveryFeeRupees] = useState('0');
@@ -69,6 +73,15 @@ export const AdminSettingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-200">
         <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition"
+              title="Back to Overview"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <Settings className="w-4 h-4 text-purple-600" />
           <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Fee Controls & Audit Log</h2>
         </div>
