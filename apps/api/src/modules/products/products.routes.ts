@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
-import { ProductModel, ShopModel } from '../../models/index.js';
+import { ProductModel, ShopModel, CategoryModel } from '../../models/index.js';
 import { authenticate, AuthenticatedRequest } from '../../middleware/auth.js';
 import { requireShopAccess } from '../../middleware/rbac.js';
 
@@ -37,8 +37,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
       query.shopId = { $in: approvedShops.map((s) => s._id) };
     }
 
-    if (categoryId && typeof categoryId === 'string' && mongoose.Types.ObjectId.isValid(categoryId)) {
-      query.categoryId = new mongoose.Types.ObjectId(categoryId);
+    if (categoryId && typeof categoryId === 'string') {
+      if (mongoose.Types.ObjectId.isValid(categoryId)) {
+        query.categoryId = new mongoose.Types.ObjectId(categoryId);
+      } else {
+        const cat = await CategoryModel.findOne({
+          $or: [
+            { slug: categoryId },
+            { slug: { $regex: categoryId, $options: 'i' } },
+            { name: { $regex: categoryId, $options: 'i' } },
+          ],
+        });
+        if (cat) query.categoryId = cat._id;
+      }
     }
 
     if (inStockOnly === 'true') {

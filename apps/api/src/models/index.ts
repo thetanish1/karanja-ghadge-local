@@ -17,6 +17,8 @@ import {
 export interface IUser extends Document {
   phone: string;
   name: string;
+  email?: string;
+  avatarUrl?: string;
   roles: UserRole[];
   status: UserStatus;
   notificationPrefs: {
@@ -36,6 +38,8 @@ const UserSchema = new Schema<IUser>(
   {
     phone: { type: String, required: true, unique: true, index: true },
     name: { type: String, default: '' },
+    email: { type: String, default: '' },
+    avatarUrl: { type: String, default: '' },
     roles: {
       type: [String],
       enum: ['customer', 'shopkeeper', 'delivery_partner', 'admin'],

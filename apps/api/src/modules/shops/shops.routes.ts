@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
-import { ShopModel, ShopMembershipModel, UserModel } from '../../models/index.js';
+import { ShopModel, ShopMembershipModel, UserModel, CategoryModel } from '../../models/index.js';
 import { authenticate, AuthenticatedRequest } from '../../middleware/auth.js';
 import { requireRoles, requireShopAccess } from '../../middleware/rbac.js';
 import { logAudit } from '../../middleware/audit.js';
@@ -194,7 +194,25 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
     }
 
     if (category && typeof category === 'string') {
-      query.categoryIds = category;
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.categoryIds = new mongoose.Types.ObjectId(category);
+      } else {
+        const cat = await CategoryModel.findOne({
+          $or: [
+            { slug: category },
+            { slug: { $regex: category, $options: 'i' } },
+            { name: { $regex: category, $options: 'i' } }
+          ]
+        });
+        if (cat) {
+          query.categoryIds = cat._id;
+        } else {
+          query.$or = [
+            { name: { $regex: category, $options: 'i' } },
+            { description: { $regex: category, $options: 'i' } },
+          ];
+        }
+      }
     }
 
     const shops = await ShopModel.find(query).sort({ isPaused: 1, name: 1 });

@@ -11,6 +11,8 @@ export interface UserDTO {
   id: string;
   phone: string;
   name: string;
+  email?: string;
+  avatarUrl?: string;
   roles: UserRole[];
   status: UserStatus;
   notificationPrefs: UserNotificationPrefs;

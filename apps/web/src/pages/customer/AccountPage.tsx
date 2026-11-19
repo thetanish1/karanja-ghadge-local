@@ -3,7 +3,8 @@ import { useAuth } from '../../context/AuthContext.js';
 import { api } from '../../services/api.js';
 import { StatusBadge } from '../../components/StatusBadge.js';
 import { formatPaiseToRupees } from '@karanjaghadge/shared';
-import { Edit2, ChevronRight, MapPin, CreditCard, Bell, Store, ArrowRight, LogOut, Clock, ShoppingBag, Truck, ShieldCheck } from 'lucide-react';
+import { Edit2, ChevronRight, MapPin, CreditCard, Bell, Store, ArrowRight, LogOut, Clock, ShoppingBag, Truck, ShieldCheck, User } from 'lucide-react';
+import { ProfileEditModal } from '../../components/ProfileEditModal.js';
 
 interface AccountPageProps {
   onOpenLegal: (page: string) => void;
@@ -27,6 +28,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   const { user, isAuthenticated, logout } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -64,12 +66,39 @@ export const AccountPage: React.FC<AccountPageProps> = ({
       <div className="bg-[#155a34] px-5 pt-7 pb-10 text-white relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-full bg-[#fed7aa] text-[#c2410c] text-lg font-extrabold flex items-center justify-center shadow-md">
-              {initials}
+            <div
+              onClick={() => {
+                if (isAuthenticated) setEditProfileOpen(true);
+                else onOpenAuth();
+              }}
+              className="relative w-14 h-14 rounded-full overflow-hidden bg-[#fed7aa] text-[#c2410c] text-lg font-extrabold flex items-center justify-center shadow-md cursor-pointer border-2 border-white/40 group"
+            >
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={userName} className="w-full h-full object-cover" />
+              ) : (
+                <span>{initials}</span>
+              )}
+              {isAuthenticated && (
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                  <Edit2 className="w-4 h-4 text-white" />
+                </div>
+              )}
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">{userName}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight">{userName}</h1>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setEditProfileOpen(true)}
+                    className="p-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition cursor-pointer"
+                    title="Edit Profile"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
               <p className="text-xs text-white/80 mt-0.5">{userPhone}</p>
+              {user?.email && <p className="text-[10px] text-white/70">{user.email}</p>}
             </div>
           </div>
 
@@ -81,9 +110,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               Sign In
             </button>
           ) : (
-            <div className="px-2 py-1 rounded-lg bg-white/20 text-[10px] font-semibold text-emerald-100">
-              Active Member
-            </div>
+            <button
+              onClick={() => setEditProfileOpen(true)}
+              className="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-[11px] font-bold text-white flex items-center gap-1 transition cursor-pointer"
+            >
+              <Edit2 className="w-3 h-3" />
+              <span>Edit</span>
+            </button>
           )}
         </div>
       </div>
@@ -269,6 +302,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal isOpen={editProfileOpen} onClose={() => setEditProfileOpen(false)} />
     </div>
   );
 };

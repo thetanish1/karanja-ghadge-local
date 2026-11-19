@@ -5,6 +5,8 @@ export interface User {
   id: string;
   phone: string;
   name: string;
+  email?: string;
+  avatarUrl?: string;
   roles: string[];
   status: string;
 }
@@ -16,6 +18,7 @@ interface AuthContextType {
   setActiveRole: (role: string) => void;
   loginWithPhoneOtp: (phone: string, otp: string, name?: string) => Promise<void>;
   quickLoginAs: (role: 'customer' | 'shopkeeper' | 'delivery_partner' | 'admin') => Promise<void>;
+  updateProfile: (data: { name?: string; email?: string; avatarUrl?: string; notificationPrefs?: any }) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -97,6 +100,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveRole(role);
   };
 
+  const updateProfile = async (data: { name?: string; email?: string; avatarUrl?: string; notificationPrefs?: any }) => {
+    try {
+      const res = await api.updateProfile(data);
+      if (res.success && res.user) {
+        setUser((prev) => (prev ? { ...prev, ...res.user } : res.user));
+        return;
+      }
+    } catch (e) {
+      console.warn('API updateProfile failed, updating local state:', e);
+    }
+    // Fallback local update
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
+  };
+
   const logout = async () => {
     try {
       await api.logout();
@@ -118,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveRole,
         loginWithPhoneOtp,
         quickLoginAs,
+        updateProfile,
         logout,
         isAuthenticated: !!user,
       }}

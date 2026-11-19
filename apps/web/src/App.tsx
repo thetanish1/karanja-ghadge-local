@@ -154,6 +154,7 @@ const MainApp: React.FC = () => {
             shopId={selectedShopId || 'shop-gupta'}
             onBack={() => setCurrentTab('home')}
             onNavigateCart={() => setCurrentTab('cart')}
+            onOpenAccount={() => setCurrentTab('account')}
           />
         );
       case 'search':

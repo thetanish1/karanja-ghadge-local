@@ -261,6 +261,49 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response,
         id: user._id.toString(),
         phone: user.phone,
         name: user.name,
+        email: user.email || '',
+        avatarUrl: user.avatarUrl || '',
+        roles: user.roles,
+        status: user.status,
+        notificationPrefs: user.notificationPrefs,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update profile (Name, Photo/Avatar, Email, Notification Prefs)
+router.patch('/profile', authenticate, async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { name, email, avatarUrl, notificationPrefs } = req.body;
+    const user = await UserModel.findById(req.user!.id);
+    if (!user) {
+      res.status(404).json({ success: false, error: 'User not found.' });
+      return;
+    }
+
+    if (name !== undefined) user.name = String(name).trim();
+    if (email !== undefined) user.email = String(email).trim();
+    if (avatarUrl !== undefined) user.avatarUrl = String(avatarUrl).trim();
+    if (notificationPrefs !== undefined && typeof notificationPrefs === 'object') {
+      user.notificationPrefs = {
+        ...user.notificationPrefs,
+        ...notificationPrefs,
+      };
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id.toString(),
+        phone: user.phone,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
         roles: user.roles,
         status: user.status,
         notificationPrefs: user.notificationPrefs,

@@ -83,6 +83,12 @@ export const api = {
 
   getMe: () => request<{ success: boolean; user: any }>('/auth/me'),
 
+  updateProfile: (data: { name?: string; email?: string; avatarUrl?: string; notificationPrefs?: any }) =>
+    request<{ success: boolean; user: any; message?: string }>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
 
   // Catalog

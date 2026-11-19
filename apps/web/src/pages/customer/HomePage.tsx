@@ -12,9 +12,14 @@ interface HomePageProps {
 
 const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   'vegetables': { emoji: '🥬', bg: 'bg-[#ecf7ee]' },
+  'vegetables-fruits': { emoji: '🥬', bg: 'bg-[#ecf7ee]' },
   'dairy': { emoji: '🥛', bg: 'bg-[#eff6ff]' },
+  'dairy-milk': { emoji: '🥛', bg: 'bg-[#eff6ff]' },
   'grocery': { emoji: '🛒', bg: 'bg-[#f5f3ff]' },
+  'groceries-kirana': { emoji: '🛒', bg: 'bg-[#f5f3ff]' },
   'bakery': { emoji: '🥐', bg: 'bg-[#fffbeb]' },
+  'bakery-snacks': { emoji: '🥐', bg: 'bg-[#fffbeb]' },
+  'pharmacy-essentials': { emoji: '💊', bg: 'bg-[#fef2f2]' },
   'cloth': { emoji: '👕', bg: 'bg-[#fdf4ff]' },
   'mobile': { emoji: '📱', bg: 'bg-[#f0f9ff]' },
   'electric': { emoji: '💡', bg: 'bg-[#fefce8]' },
@@ -24,9 +29,14 @@ const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
 
 const SHOP_FALLBACK_IMAGES: Record<string, string> = {
   'vegetables': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
+  'vegetables-fruits': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
   'dairy': 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?w=400&auto=format&fit=crop&q=80',
+  'dairy-milk': 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?w=400&auto=format&fit=crop&q=80',
   'grocery': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
+  'groceries-kirana': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80',
   'bakery': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80',
+  'bakery-snacks': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80',
+  'pharmacy-essentials': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80',
   'cloth': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&auto=format&fit=crop&q=80',
   'mobile': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80',
   'electric': 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=400&auto=format&fit=crop&q=80',
@@ -90,7 +100,17 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const getShopImage = (shop: any) => {
     if (shop.photos?.length) return shop.photos[0];
-    const slug = shop.categorySlug || shop.slug || '';
+    const name = (shop.name || '').toLowerCase();
+    const slug = (shop.categorySlug || shop.slug || '').toLowerCase();
+    if (name.includes('firework') || name.includes('cracker') || slug.includes('firework')) return SHOP_FALLBACK_IMAGES['fireworks'];
+    if (name.includes('electronic') || name.includes('tv') || slug.includes('electronic')) return SHOP_FALLBACK_IMAGES['electronic'];
+    if (name.includes('electric') || name.includes('light') || slug.includes('electric')) return SHOP_FALLBACK_IMAGES['electric'];
+    if (name.includes('cloth') || name.includes('garment') || slug.includes('cloth')) return SHOP_FALLBACK_IMAGES['cloth'];
+    if (name.includes('mobile') || name.includes('phone') || slug.includes('mobile')) return SHOP_FALLBACK_IMAGES['mobile'];
+    if (name.includes('dairy') || name.includes('milk') || slug.includes('dairy')) return SHOP_FALLBACK_IMAGES['dairy'];
+    if (name.includes('vegetable') || name.includes('fruit') || slug.includes('vegetable')) return SHOP_FALLBACK_IMAGES['vegetables'];
+    if (name.includes('bakery') || name.includes('cake') || slug.includes('bakery')) return SHOP_FALLBACK_IMAGES['bakery'];
+    if (name.includes('medical') || name.includes('pharmacy') || slug.includes('pharmacy')) return SHOP_FALLBACK_IMAGES['pharmacy-essentials'];
     return SHOP_FALLBACK_IMAGES[slug] || SHOP_FALLBACK_IMAGES['grocery'];
   };
 
