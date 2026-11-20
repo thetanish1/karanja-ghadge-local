@@ -4,6 +4,29 @@ import { useAuth } from '../../context/AuthContext.js';
 import { formatPaiseToRupees } from '@karanjaghadge/shared';
 import { Bell, Plus, ShoppingBag, FileText, Wallet, ChevronRight, Store, AlertCircle, RefreshCw } from 'lucide-react';
 
+// ── shop management rows ─────────────────────────────────────────────────────
+interface MgmtRowProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  onClick?: () => void;
+}
+const MgmtRow: React.FC<MgmtRowProps> = ({ icon, title, subtitle, onClick }) => (
+  <div
+    onClick={onClick}
+    className="bg-white p-4 rounded-[20px] border border-slate-200/80 flex items-center gap-3 cursor-pointer hover:border-[#1b5e39] transition"
+  >
+    <div className="w-10 h-10 rounded-full bg-[#e8f3ea] flex items-center justify-center text-xl flex-shrink-0">
+      {icon}
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className="text-xs font-bold text-[#111827]">{title}</div>
+      <div className="text-[10px] text-slate-400 truncate mt-0.5">{subtitle}</div>
+    </div>
+    <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+  </div>
+);
+
 interface ShopDashboardPageProps {
   onNavigateTab: (tab: 'dashboard' | 'products' | 'orders' | 'sales') => void;
   onOpenAddProduct: () => void;
@@ -19,6 +42,7 @@ export const ShopDashboardPage: React.FC<ShopDashboardPageProps> = ({
   const [shop, setShop] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [togglingPause, setTogglingPause] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -57,7 +81,25 @@ export const ShopDashboardPage: React.FC<ShopDashboardPageProps> = ({
 
   const avgOrderValuePaise = orders.length > 0 ? Math.round(totalSalesPaise / orders.length) : 0;
   const storeName = shop?.name || user?.name || 'My Local Shop';
+  const shopId: string = shop?._id || shop?.id || '';
+  const shopLocation: string = shop?.address?.area || shop?.address?.line || 'Civil Lines';
+  const shopDisplayId: string = shopId ? shopId.slice(-4).toUpperCase() : '8291';
   const isStoreOpen = shop ? !shop.isPaused : true;
+
+  const handleTogglePause = async () => {
+    if (!shopId || togglingPause) return;
+    setTogglingPause(true);
+    try {
+      const res = await api.toggleShopPause(shopId, isStoreOpen); // isStoreOpen=true → pause it
+      if (res.success) {
+        setShop((prev: any) => ({ ...prev, isPaused: res.isPaused }));
+      }
+    } catch (e) {
+      console.error('toggle pause error', e);
+    } finally {
+      setTogglingPause(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -83,18 +125,32 @@ export const ShopDashboardPage: React.FC<ShopDashboardPageProps> = ({
           <h1 className="text-xl font-extrabold text-[#111827] tracking-tight">
             {storeName}
           </h1>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#1b5e39] mt-0.5">
-            <span className={`w-2 h-2 rounded-full ${isStoreOpen ? 'bg-[#1b5e39] animate-pulse' : 'bg-red-500'}`} />
-            <span>{isStoreOpen ? 'Store is open for orders' : 'Store is paused'}</span>
+          <div className="text-[11px] text-[#6b7280] font-medium mt-0.5">
+            {shopLocation} · ID #{shopDisplayId}
           </div>
         </div>
 
-        <button
-          onClick={loadDashboardData}
-          className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={loadDashboardData}
+            className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          {/* Accepting Orders toggle */}
+          <button
+            onClick={handleTogglePause}
+            disabled={togglingPause || !shopId}
+            className="flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+          >
+            <span className="text-[10px] font-bold text-[#6b7280]">
+              {isStoreOpen ? 'Accepting Orders' : 'Paused'}
+            </span>
+            <span className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${isStoreOpen ? 'bg-[#1b5e39]' : 'bg-slate-300'}`}>
+              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${isStoreOpen ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'}`} />
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Today's Sales Hero Card */}
@@ -252,6 +308,86 @@ export const ShopDashboardPage: React.FC<ShopDashboardPageProps> = ({
             ))}
           </div>
         )}
+      </div>
+
+      {/* 6. Shop Management Section (Matches Screenshot 6) */}
+      <div className="space-y-2.5 pt-1">
+        <h3 className="text-sm font-bold text-[#111827]">Shop Management</h3>
+
+        <div className="space-y-2.5">
+          <div
+            onClick={() => onNavigateTab('products')}
+            className="bg-white rounded-[20px] p-4 border border-slate-200/80 shadow-xs hover:border-[#1b5e39] transition cursor-pointer flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-[#e8f3ea] text-[#1b5e39] flex items-center justify-center flex-shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-[#111827]">Catalogue &amp; Stock</h4>
+                <p className="text-[10px] text-[#6b7280] truncate mt-0.5">
+                  Update prices, toggle out-of-stock items (4...)
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          </div>
+
+          <div
+            onClick={() => onNavigateTab('sales')}
+            className="bg-white rounded-[20px] p-4 border border-slate-200/80 shadow-xs hover:border-[#1b5e39] transition cursor-pointer flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-[#e8f3ea] text-[#1b5e39] flex items-center justify-center flex-shrink-0">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-[#111827]">Daily Ledger &amp; Payouts</h4>
+                  <span className="text-[10px] font-extrabold text-[#1b5e39] bg-[#e8f3ea] px-2 py-0.2 rounded-full">
+                    ₹14,200
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#6b7280] truncate mt-0.5">
+                  Direct auto-transfer to HDFC Bank today a...
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          </div>
+
+          <div
+            className="bg-white rounded-[20px] p-4 border border-slate-200/80 shadow-xs hover:border-[#1b5e39] transition cursor-pointer flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#f97316] flex items-center justify-center flex-shrink-0">
+                <Bell className="w-5 h-5 text-[#f97316]" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-[#111827]">Broadcast Store Offer</h4>
+                <p className="text-[10px] text-[#6b7280] truncate mt-0.5">
+                  Send customized SMS/Notification to 380 customers
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          </div>
+
+          <div className="bg-[#f8fdf9] rounded-[20px] p-4 border border-[#cde5d2] shadow-xs flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-[#e8f3ea] text-2xl flex items-center justify-center flex-shrink-0">
+              🏆
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h4 className="text-xs font-extrabold text-[#111827]">Express Partner Certified</h4>
+                <span className="text-[9px] font-bold text-[#1b5e39] bg-[#e8f3ea] px-1.5 py-0.2 rounded">Top 5%</span>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                Average pack time is 3.1 mins. You qualify for 0% commission on the next 250 orders!
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

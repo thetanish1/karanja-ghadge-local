@@ -241,4 +241,29 @@ export const api = {
     }),
 
   getAuditLogs: () => request<{ success: boolean; logs: any[] }>('/admin/audit-logs'),
+
+  // Shop owner convenience wrappers
+  acceptOrder: (orderId: string) =>
+    request<{ success: boolean; orderStatus: string }>(`/orders/shop/orders/${orderId}/transition`, {
+      method: 'POST',
+      body: JSON.stringify({ targetState: 'shop_accepted' }),
+    }),
+
+  declineOrder: (orderId: string, reason?: string) =>
+    request<{ success: boolean; orderStatus: string }>(`/orders/shop/orders/${orderId}/transition`, {
+      method: 'POST',
+      body: JSON.stringify({ targetState: 'cancelled', reason }),
+    }),
+
+  transitionOrder: (orderId: string, targetState: string, reason?: string) =>
+    request<{ success: boolean; orderStatus: string }>(`/orders/shop/orders/${orderId}/transition`, {
+      method: 'POST',
+      body: JSON.stringify({ targetState, reason }),
+    }),
+
+  toggleShopPause: (shopId: string, isPaused: boolean) =>
+    request<{ success: boolean; isPaused: boolean; hours: any }>(`/shops/${shopId}/availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isPaused }),
+    }),
 };

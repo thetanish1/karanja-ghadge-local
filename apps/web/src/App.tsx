@@ -19,6 +19,7 @@ import { SearchPage } from './pages/customer/SearchPage.js';
 import { CartPage } from './pages/customer/CartPage.js';
 import { CheckoutPage } from './pages/customer/CheckoutPage.js';
 import { OrderStatusPage } from './pages/customer/OrderStatusPage.js';
+import { OrderSuccessPage } from './pages/customer/OrderSuccessPage.js';
 import { OrderHistoryPage } from './pages/customer/OrderHistoryPage.js';
 import { AccountPage } from './pages/customer/AccountPage.js';
 
@@ -52,6 +53,12 @@ const MainApp: React.FC = () => {
   const [selectedShopId, setSelectedShopId] = useState<string | null>('shop-gupta');
   const [activeOrderId, setActiveOrderId] = useState<string | null>('#AC2409');
   const [legalPage, setLegalPage] = useState<string>('terms');
+  const [successOrderMeta, setSuccessOrderMeta] = useState<{
+    orderId: string;
+    orderNumber: string;
+    totalPaise: number;
+    shopName: string;
+  } | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Switch initial tab when role perspective switches
@@ -173,10 +180,34 @@ const MainApp: React.FC = () => {
             onBack={() => setCurrentTab('cart')}
             onOrderSuccess={(orderId) => {
               setActiveOrderId(orderId);
-              setCurrentTab('orders');
+              setSuccessOrderMeta({
+                orderId,
+                orderNumber: orderId.replace(/\D/g, '').slice(0, 8) || '89241',
+                totalPaise: 0,
+                shopName: 'Shree Ganesh Kirana',
+              });
+              setCurrentTab('order-success');
             }}
           />
         );
+      case 'order-success':
+        return successOrderMeta ? (
+          <OrderSuccessPage
+            orderId={successOrderMeta.orderId}
+            orderNumber={successOrderMeta.orderNumber}
+            totalPaise={successOrderMeta.totalPaise}
+            shopName={successOrderMeta.shopName}
+            estimatedMinutes={20}
+            onTrackOrder={() => {
+              setSuccessOrderMeta(null);
+              setCurrentTab('orders');
+            }}
+            onShopMore={() => {
+              setSuccessOrderMeta(null);
+              setCurrentTab('shops');
+            }}
+          />
+        ) : null;
       case 'orders':
         return (
           <OrderStatusPage
@@ -294,7 +325,7 @@ const MainApp: React.FC = () => {
         <InstallPwaBanner />
 
         {/* Top Mobile Navbar (Hidden on store detail, cart, tracking, and role portals) */}
-        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
+        {currentTab !== 'shop-detail' && currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'order-success' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
           <Navbar
             onOpenLocation={() => setShowLocationModal(true)}
             onOpenAccount={() => setCurrentTab('account')}
@@ -308,7 +339,7 @@ const MainApp: React.FC = () => {
         </main>
 
         {/* Floating Cart Bar (appears when items in cart, hidden on cart, tracking, and role portals) */}
-        {currentTab !== 'cart' && currentTab !== 'orders' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
+        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'order-success' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
           <FloatingCartBar
             onOpenCart={() => setCurrentTab('cart')}
             isShopDetail={currentTab === 'shop-detail'}
@@ -316,7 +347,7 @@ const MainApp: React.FC = () => {
         )}
 
         {/* Bottom Navigation (matching Figma 4 tabs, hidden on role portals) */}
-        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'shop-detail' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
+        {currentTab !== 'cart' && currentTab !== 'orders' && currentTab !== 'order-success' && currentTab !== 'shop-detail' && !currentTab.startsWith('shop') && !currentTab.startsWith('delivery') && !currentTab.startsWith('admin') && (
           <BottomNav currentTab={currentTab} onSelectTab={(tab) => setCurrentTab(tab)} />
         )}
 
