@@ -364,7 +364,7 @@ const OrderSchema = new Schema<IOrder>(
     deliveryFeePaise: { type: Number, default: 0 },
     platformFeePaise: { type: Number, default: 0 },
     totalPaise: { type: Number, required: true },
-    paymentMethod: { type: String, enum: ['cod', 'pay_direct_to_shop'], default: 'cod' },
+    paymentMethod: { type: String, enum: ['cod', 'pay_direct_to_shop', 'upi'], default: 'cod' },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
     idempotencyKey: { type: String, required: true, unique: true, index: true },
     notes: { type: String },

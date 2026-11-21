@@ -138,7 +138,7 @@ export type OrderStatus =
   | 'completed';
 
 export type FulfilmentType = 'delivery' | 'pickup';
-export type PaymentMethod = 'cod' | 'pay_direct_to_shop';
+export type PaymentMethod = 'cod' | 'pay_direct_to_shop' | 'upi';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
 export interface OrderItemSnapshot {

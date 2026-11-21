@@ -116,6 +116,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateQuantity = async (productId: string, qty: number, meta?: ItemMetadata) => {
+    // 0. Check Single-Shop Cart Conflict
+    if (cart && cart.shopId && meta?.shopId && cart.shopId !== meta.shopId && cart.items.length > 0 && qty > 0) {
+      setConflictModal({
+        isOpen: true,
+        error: `Your cart currently contains items from "${cart.shopName || 'another store'}". AapnaCart fulfills orders from one store at a time for fastest doorstep delivery. Do you want to clear your current cart and start an order from "${meta.shopName || 'this store'}"?`,
+        pendingProductId: productId,
+        pendingQty: qty,
+        pendingMeta: meta,
+      });
+      return;
+    }
+
     // 1. Optimistic Local Update
     setCart((prevCart) => {
       const existingItems = prevCart?.items ? [...prevCart.items] : [];
@@ -136,6 +148,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           subtotalPaise: qty * unitPrice,
           name: meta?.name || existing.name,
           unit: meta?.unit || existing.unit,
+          image: meta?.image || existing.image,
         };
         nextItems = existingItems;
       } else {
@@ -163,8 +176,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return {
-        shopId: meta?.shopId || prevCart?.shopId || 'shop-gupta',
-        shopName: meta?.shopName || prevCart?.shopName || 'Gupta Fresh Mart',
+        shopId: meta?.shopId || prevCart?.shopId,
+        shopName: meta?.shopName || prevCart?.shopName || 'Local Store',
         items: nextItems,
         itemsTotalPaise: itemsTotal,
         deliveryFeePaise: 0,

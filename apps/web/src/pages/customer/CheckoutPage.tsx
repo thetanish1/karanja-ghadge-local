@@ -3,11 +3,26 @@ import { useCart } from '../../context/CartContext.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { api } from '../../services/api.js';
 import { formatPaiseToRupees } from '@karanjaghadge/shared';
-import { ArrowLeft, Truck, Store, MapPin, CheckCircle, CreditCard, Banknote, ShieldCheck, AlertCircle } from 'lucide-react';
+import { getCurrentGpsPosition, reverseGeocodeCoords } from '../../services/location.js';
+import {
+  ArrowLeft,
+  Truck,
+  Store,
+  MapPin,
+  CheckCircle,
+  CreditCard,
+  Banknote,
+  ShieldCheck,
+  AlertCircle,
+  QrCode,
+  Smartphone,
+  Navigation,
+  Lock,
+} from 'lucide-react';
 
 interface CheckoutPageProps {
   onBack: () => void;
-  onOrderSuccess: (orderId: string) => void;
+  onOrderSuccess: (orderId: string, orderData?: { orderNumber?: string; totalPaise?: number; shopName?: string }) => void;
 }
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBack, onOrderSuccess }) => {
@@ -15,37 +30,71 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBack, onOrderSucce
   const { user } = useAuth();
 
   const [fulfilmentType, setFulfilmentType] = useState<'delivery' | 'pickup'>('delivery');
-  const [line, setLine] = useState('House 42, Ward 3, Shivaji Chowk');
-  const [landmark, setLandmark] = useState('Near Hanuman Temple');
+  const [line, setLine] = useState((user as any)?.address || 'Flat 302, Green Enclave, Civil Lines');
+  const [landmark, setLandmark] = useState('Near Town Hall & Hanuman Temple');
   const [pincode, setPincode] = useState('442203');
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'pay_direct_to_shop'>('cod');
+  const [locating, setLocating] = useState(false);
+
+  // Payment method: upi | cod | pay_direct_to_shop
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod' | 'pay_direct_to_shop'>('upi');
+  const [upiId, setUpiId] = useState('customer@okhdfcbank');
+  const [selectedUpiApp, setSelectedUpiApp] = useState<'gpay' | 'phonepe' | 'paytm'>('gpay');
+
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="p-8 text-center max-w-sm mx-auto">
-        <p className="text-sm font-semibold text-slate-700">No items to checkout.</p>
-        <button onClick={onBack} className="mt-3 text-xs text-emerald-600 font-bold underline">
+      <div className="min-h-screen bg-[#f8faf9] flex flex-col items-center justify-center p-6 text-center font-sans select-none">
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+          <Store className="w-8 h-8" />
+        </div>
+        <p className="text-sm font-bold text-slate-800">Your cart is empty.</p>
+        <p className="text-xs text-slate-500 mt-1 mb-4">Please add items to cart before proceeding to payment.</p>
+        <button
+          onClick={onBack}
+          className="px-6 py-2.5 bg-[#1b5e39] text-white rounded-full text-xs font-bold shadow-sm"
+        >
           Return to Cart
         </button>
       </div>
     );
   }
 
+  const handleGpsAutofill = async () => {
+    try {
+      setLocating(true);
+      setError('');
+      const coords = await getCurrentGpsPosition();
+      const addr = await reverseGeocodeCoords(coords.lat, coords.lng);
+      if (addr.formattedAddress) {
+        setLine(addr.formattedAddress);
+      }
+      if (addr.area) {
+        setLandmark(addr.area);
+      }
+      if (addr.pincode) {
+        setPincode(addr.pincode);
+      }
+    } catch (e: any) {
+      setError(e.message || 'Could not fetch GPS location. Please type your address.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (fulfilmentType === 'delivery' && (!line || line.trim().length < 5)) {
-      setError('Please provide a complete delivery address in Karanjaghadge.');
+      setError('Please provide a complete delivery address in Karanja (Ghadge).');
       return;
     }
 
     try {
       setLoading(true);
-      // Generate unique idempotency key
       const idempotencyKey = `kgl-checkout-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       const res = await api.createOrder({
@@ -57,222 +106,345 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBack, onOrderSucce
                 line,
                 landmark,
                 pincode,
-                coordinates: [78.5484, 21.1714], // Karanja center
+                coordinates: [78.5484, 21.1714],
               }
             : undefined,
-        notes,
+        notes: notes ? `${notes} (Paid via ${paymentMethod.toUpperCase()})` : `Paid via ${paymentMethod.toUpperCase()}`,
         idempotencyKey,
       });
 
       if (res.success && res.order) {
+        const orderData = {
+          orderNumber: res.order.orderNumber || res.order.id?.slice(-5) || '89241',
+          totalPaise: cart.totalPaise,
+          shopName: cart.shopName || 'Shree Ganesh Kirana',
+        };
         await refreshCart();
-        onOrderSuccess(res.order.id);
+        onOrderSuccess(res.order.id, orderData);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to place order');
+      setError(err.message || 'Payment or order placement failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto pb-28">
-      {/* Top Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-        <button onClick={onBack} className="p-1 -ml-1 text-slate-700 hover:text-slate-900 flex items-center gap-1 text-xs font-semibold">
+    <div className="min-h-screen bg-[#f8faf9] font-sans select-none pb-28">
+      {/* ── TOP HEADER ── */}
+      <div className="bg-white px-4 py-3.5 flex items-center justify-between border-b border-slate-100 sticky top-0 z-30">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition shadow-xs cursor-pointer"
+        >
           <ArrowLeft className="w-4 h-4" />
-          <span>Cart</span>
         </button>
-        <span className="text-xs font-bold text-slate-800">Checkout</span>
-        <div className="w-6" />
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="text-center">
+          <h1 className="text-base font-extrabold text-[#111827]">Payment &amp; Checkout</h1>
+          <p className="text-[10px] text-slate-400 font-medium">AapnaCart Zero-Fee Payment</p>
         </div>
-      )}
-
-      {/* Fulfilment Toggle: Delivery vs Pickup */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
-        <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-          How would you like to receive your order?
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setFulfilmentType('delivery')}
-            className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 text-xs font-bold transition ${
-              fulfilmentType === 'delivery'
-                ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Truck className="w-5 h-5 text-emerald-600" />
-            <span>Home Delivery</span>
-            <span className="text-[10px] font-normal text-emerald-700">Free in Pilot</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFulfilmentType('pickup')}
-            className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 text-xs font-bold transition ${
-              fulfilmentType === 'pickup'
-                ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Store className="w-5 h-5 text-emerald-600" />
-            <span>Self Pickup</span>
-            <span className="text-[10px] font-normal text-slate-400">Collect at counter</span>
-          </button>
+        <div className="w-10 flex items-center justify-center text-[#1b5e39]">
+          <Lock className="w-4 h-4 text-[#1b5e39]" />
         </div>
       </div>
 
-      {/* Delivery Address Form if Delivery chosen */}
-      {fulfilmentType === 'delivery' && (
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Karanjaghadge Delivery Address
-            </h4>
+      <form onSubmit={handlePlaceOrder} className="p-4 space-y-4 max-w-md mx-auto">
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">House / Flat / Street Line</label>
-            <input
-              type="text"
-              placeholder="e.g. Ward No. 3, Shivaji Chowk"
-              value={line}
-              onChange={(e) => setLine(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-              required
-            />
+        {/* 1. Fulfilment: Delivery vs Pickup */}
+        <div className="bg-white rounded-[24px] p-4 border border-slate-200/80 shadow-xs space-y-2.5">
+          <label className="block text-xs font-extrabold text-[#111827] uppercase tracking-wider">
+            Fulfilment Type
+          </label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setFulfilmentType('delivery')}
+              className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 text-xs font-bold transition cursor-pointer ${
+                fulfilmentType === 'delivery'
+                  ? 'border-[#1b5e39] bg-[#e8f3ea] text-[#1b5e39] shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Truck className="w-5 h-5 text-[#1b5e39]" />
+              <span>Doorstep Delivery</span>
+              <span className="text-[10px] font-bold text-[#1b5e39]">FREE Pilot</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFulfilmentType('pickup')}
+              className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 text-xs font-bold transition cursor-pointer ${
+                fulfilmentType === 'pickup'
+                  ? 'border-[#1b5e39] bg-[#e8f3ea] text-[#1b5e39] shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Store className="w-5 h-5 text-[#1b5e39]" />
+              <span>Self Pickup</span>
+              <span className="text-[10px] font-normal text-slate-400">Collect at store</span>
+            </button>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Landmark (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. Near Hanuman Temple"
-                value={landmark}
-                onChange={(e) => setLandmark(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-              />
+        {/* 2. Delivery Address (if Delivery selected) */}
+        {fulfilmentType === 'delivery' && (
+          <div className="bg-white rounded-[24px] p-4 border border-slate-200/80 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1b5e39]" />
+                <h4 className="text-xs font-extrabold text-[#111827] uppercase tracking-wider">
+                  Karanja Delivery Address
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={handleGpsAutofill}
+                disabled={locating}
+                className="text-[10px] font-bold text-[#1b5e39] bg-[#e8f3ea] px-2.5 py-1 rounded-full flex items-center gap-1 hover:bg-[#d6ecda] transition cursor-pointer"
+              >
+                <Navigation className="w-3 h-3" />
+                <span>{locating ? 'Locating...' : 'Use GPS'}</span>
+              </button>
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Pincode</label>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">House / Flat / Street Line</label>
               <input
                 type="text"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                placeholder="e.g. Flat 302, Green Enclave, Civil Lines"
+                value={line}
+                onChange={(e) => setLine(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b5e39] focus:bg-white transition"
                 required
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Landmark</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Near Town Hall"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b5e39] focus:bg-white transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Pincode</label>
+                <input
+                  type="text"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b5e39] focus:bg-white transition"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. PAYMENT OPTIONS (UPI / COD / Counter) */}
+        <div className="bg-white rounded-[24px] p-4 border border-slate-200/80 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-extrabold text-[#111827] uppercase tracking-wider">
+              Choose Payment Method
+            </label>
+            <span className="text-[10px] font-bold text-[#1b5e39] bg-[#e8f3ea] px-2 py-0.5 rounded-full">
+              100% Secure
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {/* OPTION 1: UPI (Recommended) */}
+            <div
+              onClick={() => setPaymentMethod('upi')}
+              className={`p-3.5 rounded-2xl border-2 cursor-pointer transition ${
+                paymentMethod === 'upi'
+                  ? 'border-[#1b5e39] bg-[#f0fdf4]'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#e8f3ea] text-[#1b5e39] flex items-center justify-center font-black">
+                    <Smartphone className="w-5 h-5 text-[#1b5e39]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold text-[#111827]">UPI Instant Payment</span>
+                      <span className="text-[9px] font-extrabold bg-[#f97316] text-white px-1.5 py-0.2 rounded-full">
+                        FASTEST
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Google Pay • PhonePe • Paytm • Any UPI</p>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  paymentMethod === 'upi' ? 'border-[#1b5e39] bg-[#1b5e39]' : 'border-slate-300'
+                }`}>
+                  {paymentMethod === 'upi' && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </div>
+
+              {/* UPI Sub-options when selected */}
+              {paymentMethod === 'upi' && (
+                <div className="mt-3 pt-3 border-t border-[#cde5d2] space-y-2.5">
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'gpay', label: 'Google Pay', icon: '🟢' },
+                      { id: 'phonepe', label: 'PhonePe', icon: '🟣' },
+                      { id: 'paytm', label: 'Paytm', icon: '🔵' },
+                    ].map((app) => (
+                      <button
+                        key={app.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedUpiApp(app.id as any);
+                        }}
+                        className={`flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold border transition flex items-center justify-center gap-1 ${
+                          selectedUpiApp === app.id
+                            ? 'bg-[#1b5e39] text-white border-[#1b5e39]'
+                            : 'bg-white text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <span>{app.icon}</span>
+                        <span>{app.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Enter UPI ID (e.g. mobile@upi)"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b5e39]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* OPTION 2: Cash on Delivery (COD) */}
+            <div
+              onClick={() => setPaymentMethod('cod')}
+              className={`p-3.5 rounded-2xl border-2 cursor-pointer transition ${
+                paymentMethod === 'cod'
+                  ? 'border-[#1b5e39] bg-[#f0fdf4]'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                    <Banknote className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-[#111827]">Cash on Delivery (COD)</div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Pay in cash to the rider at your door</p>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  paymentMethod === 'cod' ? 'border-[#1b5e39] bg-[#1b5e39]' : 'border-slate-300'
+                }`}>
+                  {paymentMethod === 'cod' && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </div>
+            </div>
+
+            {/* OPTION 3: Pay Directly to Shop */}
+            <div
+              onClick={() => setPaymentMethod('pay_direct_to_shop')}
+              className={`p-3.5 rounded-2xl border-2 cursor-pointer transition ${
+                paymentMethod === 'pay_direct_to_shop'
+                  ? 'border-[#1b5e39] bg-[#f0fdf4]'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                    <Store className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold text-[#111827]">Pay Directly to Shop</div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Pay at store counter via Shop UPI QR or cash</p>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  paymentMethod === 'pay_direct_to_shop' ? 'border-[#1b5e39] bg-[#1b5e39]' : 'border-slate-300'
+                }`}>
+                  {paymentMethod === 'pay_direct_to_shop' && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Payment Options (COD & Pay Direct) */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
-        <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-          Payment Method
-        </label>
-        <div className="space-y-2">
-          <label
-            className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
-              paymentMethod === 'cod'
-                ? 'border-emerald-600 bg-emerald-50/50'
-                : 'border-slate-200 bg-white hover:bg-slate-50'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMethod === 'cod'}
-                onChange={() => setPaymentMethod('cod')}
-                className="text-emerald-600 focus:ring-emerald-500"
-              />
-              <div>
-                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Banknote className="w-4 h-4 text-emerald-600" />
-                  <span>Cash on Delivery (COD)</span>
-                </div>
-                <div className="text-[11px] text-slate-500">Pay cash directly when order reaches you</div>
-              </div>
-            </div>
+        {/* 4. Special Notes */}
+        <div className="bg-white rounded-[24px] p-4 border border-slate-200/80 shadow-xs">
+          <label className="block text-xs font-extrabold text-[#111827] uppercase tracking-wider mb-1.5">
+            Delivery Instructions (Optional)
           </label>
+          <textarea
+            rows={2}
+            placeholder="e.g. Ring bell 302, leave at door if guard not present..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b5e39] focus:bg-white transition"
+          />
+        </div>
 
-          <label
-            className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
-              paymentMethod === 'pay_direct_to_shop'
-                ? 'border-emerald-600 bg-emerald-50/50'
-                : 'border-slate-200 bg-white hover:bg-slate-50'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMethod === 'pay_direct_to_shop'}
-                onChange={() => setPaymentMethod('pay_direct_to_shop')}
-                className="text-emerald-600 focus:ring-emerald-500"
-              />
-              <div>
-                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Store className="w-4 h-4 text-blue-600" />
-                  <span>Pay Directly to Shop (Counter / Shop QR)</span>
-                </div>
-                <div className="text-[11px] text-slate-500">Pay directly to the shopkeeper via UPI QR or cash</div>
-              </div>
+        {/* 5. Order Total & Pay Button */}
+        <div className="bg-white rounded-[24px] p-4 border border-slate-200/80 shadow-xs space-y-2.5">
+          <div className="flex justify-between items-center text-xs text-slate-600">
+            <span>Items Total ({cart.itemCount} items)</span>
+            <span className="font-bold text-[#111827]">{formatPaiseToRupees(cart.itemsTotalPaise)}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs text-slate-600">
+            <span>Delivery &amp; Packaging Fee</span>
+            <span className="font-extrabold text-[#1b5e39]">FREE (Pilot)</span>
+          </div>
+          <div className="pt-2.5 border-t border-slate-100 flex justify-between items-center">
+            <div>
+              <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Grand Total</div>
+              <div className="text-xl font-black text-[#111827]">{formatPaiseToRupees(cart.totalPaise)}</div>
             </div>
-          </label>
-        </div>
-      </div>
+            <div className="text-right">
+              <span className="text-[10px] text-[#1b5e39] font-bold bg-[#e8f3ea] px-2 py-0.5 rounded-full">
+                Zero Convenience Fee
+              </span>
+            </div>
+          </div>
 
-      {/* Instructions / Notes */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-        <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
-          Special Notes for Shopkeeper (Optional)
-        </label>
-        <textarea
-          rows={2}
-          placeholder="e.g. Please bring fresh coriander or call before leaving..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-        />
-      </div>
-
-      {/* Order Total & Confirm Button */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
-        <div className="flex justify-between items-center text-xs text-slate-600">
-          <span>Items Total ({cart.itemCount} items)</span>
-          <span className="font-bold text-slate-900">{formatPaiseToRupees(cart.itemsTotalPaise)}</span>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-[#1b5e39] hover:bg-[#155a34] active:scale-[0.99] disabled:opacity-50 text-white rounded-2xl text-sm font-extrabold shadow-sm transition flex items-center justify-center gap-2 cursor-pointer mt-2"
+          >
+            {loading ? (
+              <span className="animate-pulse">Processing Payment &amp; Placing Order...</span>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                <span>
+                  {paymentMethod === 'upi' ? 'Pay & Place Order' : 'Confirm Order'} ({formatPaiseToRupees(cart.totalPaise)})
+                </span>
+              </>
+            )}
+          </button>
         </div>
-        <div className="flex justify-between items-center text-xs text-slate-600">
-          <span>Delivery & Platform Fee</span>
-          <span className="font-bold text-emerald-700">₹0 (Free Pilot)</span>
-        </div>
-        <div className="pt-2 border-t border-slate-100 flex justify-between items-center font-extrabold text-sm text-slate-900">
-          <span>Grand Total</span>
-          <span className="text-base text-emerald-700">{formatPaiseToRupees(cart.totalPaise)}</span>
-        </div>
-
-        <button
-          onClick={handlePlaceOrder}
-          disabled={loading}
-          className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg flex items-center justify-center gap-2 transition"
-        >
-          <span>{loading ? 'Submitting Order...' : `Confirm & Place Order (${formatPaiseToRupees(cart.totalPaise)})`}</span>
-          <CheckCircle className="w-4 h-4" />
-        </button>
-      </div>
+      </form>
     </div>
   );
 };

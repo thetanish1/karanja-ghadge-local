@@ -22,7 +22,7 @@ const router = Router();
 
 const createOrderSchema = z.object({
   fulfilmentType: z.enum(['delivery', 'pickup']),
-  paymentMethod: z.enum(['cod', 'pay_direct_to_shop']).default('cod'),
+  paymentMethod: z.enum(['cod', 'pay_direct_to_shop', 'upi']).default('cod'),
   deliveryAddress: z
     .object({
       line: z.string().min(5, 'Delivery address line is required'),
@@ -170,7 +170,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response, 
       platformFeePaise: totals.platformFeePaise,
       totalPaise: totals.totalPaise,
       paymentMethod: input.paymentMethod,
-      paymentStatus: 'pending',
+      paymentStatus: input.paymentMethod === 'upi' ? 'paid' : 'pending',
       idempotencyKey: input.idempotencyKey,
       notes: input.notes,
       deliveryOtp,

@@ -170,7 +170,7 @@ const MainApp: React.FC = () => {
         return (
           <CartPage
             onBack={() => setCurrentTab('home')}
-            onProceedToCheckout={() => setCurrentTab('orders')}
+            onProceedToCheckout={() => setCurrentTab('checkout')}
             onBrowseShops={() => setCurrentTab('shops')}
           />
         );
@@ -178,13 +178,13 @@ const MainApp: React.FC = () => {
         return (
           <CheckoutPage
             onBack={() => setCurrentTab('cart')}
-            onOrderSuccess={(orderId) => {
+            onOrderSuccess={(orderId, orderData) => {
               setActiveOrderId(orderId);
               setSuccessOrderMeta({
                 orderId,
-                orderNumber: orderId.replace(/\D/g, '').slice(0, 8) || '89241',
-                totalPaise: 0,
-                shopName: 'Shree Ganesh Kirana',
+                orderNumber: orderData?.orderNumber || orderId.replace(/\D/g, '').slice(0, 8) || '89241',
+                totalPaise: orderData?.totalPaise || 0,
+                shopName: orderData?.shopName || 'Shree Ganesh Kirana',
               });
               setCurrentTab('order-success');
             }}

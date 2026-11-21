@@ -125,7 +125,7 @@ export const api = {
   // Orders
   createOrder: (payload: {
     fulfilmentType: 'delivery' | 'pickup';
-    paymentMethod: 'cod' | 'pay_direct_to_shop';
+    paymentMethod: 'cod' | 'pay_direct_to_shop' | 'upi';
     deliveryAddress?: { line: string; landmark?: string; pincode: string; coordinates?: [number, number] };
     notes?: string;
     idempotencyKey: string;
